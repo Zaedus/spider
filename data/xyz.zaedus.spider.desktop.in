@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=spider
+Exec=spider
+Icon=xyz.zaedus.spider
+Terminal=false
+Type=Application
+Categories=GTK;
+StartupNotify=true
