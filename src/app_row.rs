@@ -4,12 +4,14 @@ use gdk_pixbuf::Pixbuf;
 use glib::clone;
 use glib::Object;
 use gtk::{gdk, gio, glib};
-use std::cell::RefCell;
+use std::cell::{OnceCell, RefCell};
 use gio::MemoryInputStream;
 
 use crate::apps::{get_app_details, get_app_icon};
 
 mod imp {
+
+    use crate::apps::AppDetails;
 
     use super::*;
 
@@ -24,6 +26,8 @@ mod imp {
 
         #[property(get, set = Self::on_id_set)]
         pub id: RefCell<String>,
+
+        pub details: OnceCell<AppDetails>,
     }
 
     #[glib::object_subclass]
@@ -58,14 +62,10 @@ mod imp {
                 async move {
                     let icon = get_app_icon(id.clone()).await.unwrap();
                     let details = get_app_details(id).with_icon(icon);
+                    _self.details.set(details.clone()).expect("attempted to set id more than once");
+
                     _self.title.set_label(&details.title);
-                    let bytes = glib::Bytes::from(details.icon.unwrap().as_slice());
-                    let stream = MemoryInputStream::from_bytes(&bytes);
-                    let pixbuf =
-                        Pixbuf::from_stream_at_scale(&stream, 32, 32, true, gio::Cancellable::NONE)
-                            .unwrap();
-                    let texture = gdk::Texture::for_pixbuf(&pixbuf);
-                    _self.icon.set_paintable(Some(&texture));
+                    _self.icon.set_paintable(Some(&details.to_gdk_texture(64)));
                 }
             ));
         }

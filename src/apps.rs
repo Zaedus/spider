@@ -7,13 +7,16 @@ use ashpd::{
     },
     WindowIdentifier,
 };
+use gdk_pixbuf::Pixbuf;
+use gio::MemoryInputStream;
 use gtk::prelude::SettingsExtManual;
+use gtk::{gdk, gio, glib};
 
 use crate::{application::settings, config, util::Image};
 
 type AppsSettings = HashMap<String, HashMap<String, String>>;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct AppDetails {
     pub id: String,
     pub url: String,
@@ -22,7 +25,7 @@ pub struct AppDetails {
 }
 
 impl AppDetails {
-    pub fn new(id: String, title: String, url: String,) -> Self {
+    pub fn new(id: String, title: String, url: String) -> Self {
         Self {
             id,
             url,
@@ -41,6 +44,13 @@ impl AppDetails {
             icon: Some(icon),
             ..self
         }
+    }
+    pub fn to_gdk_texture(&self, size: i32) -> gdk::Texture {
+        let bytes = glib::Bytes::from(self.icon.clone().unwrap().as_slice());
+        let stream = MemoryInputStream::from_bytes(&bytes);
+        let pixbuf =
+            Pixbuf::from_stream_at_scale(&stream, size, size, true, gio::Cancellable::NONE).unwrap();
+        gdk::Texture::for_pixbuf(&pixbuf)
     }
 }
 

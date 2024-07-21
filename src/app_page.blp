@@ -1,0 +1,125 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $AppPage : Adw.NavigationPage {
+  Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      show-title: false;
+
+      [start]
+      Button {
+        label: "Show";
+
+        clicked => $on_show_clicked() swapped;
+      }
+    }
+
+    Adw.Clamp {
+      maximum-size: 600;
+      tightening-threshold: 500;
+      margin-start: 20;
+      margin-end: 20;
+
+      width-request: 300;
+
+      Box {
+        orientation: vertical;
+        spacing: 10;
+        hexpand: true;
+        halign: fill;
+
+        Button {
+          vexpand: false;
+          hexpand: false;
+          valign: center;
+          halign: center;
+
+          Overlay {
+            [overlay]
+            Image {
+              icon-name: "document-edit-symbolic";
+              valign: end;
+              halign: end;
+
+              styles ["right"]
+            }
+            Image icon_image {
+              pixel-size: 96;
+              margin-end: 5;
+              margin-top: 5;
+              margin-start: 5;
+              margin-bottom: 5;
+            }
+          }
+        }
+
+        Adw.PreferencesPage pref_page {
+          Adw.PreferencesGroup {
+            title: "General";
+            description: "Basic options";
+
+            Adw.EntryRow url_entry {
+              title: "URL";
+            }
+            Adw.EntryRow title_entry {
+              title: "Title";
+            }
+          }
+          Adw.PreferencesGroup {
+            title: "Custom Colors";
+            description: "Set custom header bar colors that better match your web app for both dark and light themes";
+
+            Adw.ExpanderRow lt_colors {
+              title: "Light Theme Colors";
+              show-enable-switch: true;
+
+              Adw.ActionRow {
+                title: "Background Color";
+                ColorDialogButton ltb_color {
+                  valign: center;
+                  dialog: ColorDialog {
+                    title: "Light Theme Background Color";
+                  };
+                }
+              }
+              Adw.ActionRow {
+                title: "Foreground Color";
+                ColorDialogButton ltf_color {
+                  valign: center;
+                  dialog: ColorDialog {
+                    title: "Light Theme Foreground Color";
+                  };
+                }
+              }
+            }
+
+            Adw.ExpanderRow dt_colors {
+              title: "Dark Theme Colors";
+              show-enable-switch: true;
+
+              Adw.ActionRow {
+                title: "Background Color";
+                ColorDialogButton dtb_color {
+                  valign: center;
+                  dialog: ColorDialog {
+                    title: "Dark Theme Background Color";
+                  };
+                }
+              }
+              Adw.ActionRow {
+                title: "Foreground Color";
+                ColorDialogButton dtf_color {
+                  valign: center;
+                  dialog: ColorDialog {
+                    title: "Dark Theme Foreground Color";
+                  };
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

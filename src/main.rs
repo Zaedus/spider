@@ -18,6 +18,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+mod app_page;
 mod app_row;
 mod app_window;
 mod application;

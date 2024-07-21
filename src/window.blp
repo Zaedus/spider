@@ -42,8 +42,17 @@ template $SpiderWindow: Adw.ApplicationWindow {
     }
     [content]
     Adw.NavigationPage {
-      title: "Lmao";
-      
+      title: "Spider";
+      Adw.ToolbarView {
+        [top]
+        Adw.HeaderBar {}
+        
+        Adw.StatusPage {
+          icon-name: "go-home";
+          title: "Welcome to Spider";
+          description: "Create a new app or navigate to one you already made!";
+        }
+      }
     }
   }
 }

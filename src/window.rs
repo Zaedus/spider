@@ -28,6 +28,8 @@ use crate::create_app_dialog::CreateAppDialog;
 
 mod imp {
 
+    use crate::app_page::AppPage;
+
     use super::*;
 
     #[derive(Debug, Default, gtk::CompositeTemplate)]
@@ -81,11 +83,10 @@ mod imp {
         #[template_callback]
         fn on_app_selected(&self, row: Option<AppRow>) {
             if let Some(row) = row {
-                self.obj()
-                    .clone()
-                    .upcast::<gtk::Widget>()
-                    .activate_action("app.open-app", Some(&row.id().to_variant()))
-                    .unwrap();
+                if let Some(details) = row.imp().details.get() {
+                    let page = AppPage::new(details.clone());
+                    self.split_view.set_content(Some(&page));
+                }
             }
         }
     }
