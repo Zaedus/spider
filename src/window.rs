@@ -18,11 +18,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use gtk::prelude::*;
+use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gtk::{gio, glib};
 
+use crate::create_app_dialog::CreateAppDialog;
+use crate::config;
+
 mod imp {
+
     use super::*;
 
     #[derive(Debug, Default, gtk::CompositeTemplate)]
@@ -30,9 +34,10 @@ mod imp {
     pub struct SpiderWindow {
         // Template widgets
         #[template_child]
-        pub header_bar: TemplateChild<adw::HeaderBar>,
+        pub split_view: TemplateChild<adw::NavigationSplitView>,
         #[template_child]
-        pub label: TemplateChild<gtk::Label>,
+        pub apps_listbox: TemplateChild<gtk::ListBox>,
+
     }
 
     #[glib::object_subclass]
@@ -43,6 +48,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             klass.bind_template();
+            klass.bind_template_callbacks();
         }
 
         fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
@@ -50,11 +56,28 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for SpiderWindow {}
+    impl ObjectImpl for SpiderWindow {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            let obj = self.obj();
+            obj.setup_gactions();
+            obj.refresh();
+        }
+    }
     impl WidgetImpl for SpiderWindow {}
     impl WindowImpl for SpiderWindow {}
     impl ApplicationWindowImpl for SpiderWindow {}
     impl AdwApplicationWindowImpl for SpiderWindow {}
+
+    #[gtk::template_callbacks]
+    impl SpiderWindow {
+        #[template_callback]
+        fn on_add_clicked(&self, _: gtk::Button) {
+            let dialog = CreateAppDialog::new();
+            dialog.present(Some(&self.obj().clone()));
+        }
+    }
 }
 
 glib::wrapper! {
@@ -67,5 +90,23 @@ impl SpiderWindow {
         glib::Object::builder()
             .property("application", application)
             .build()
+    }
+    fn setup_gactions(&self) {
+        self.add_action_entries([
+            gio::ActionEntry::builder("refresh")
+                .activate(move |app: &Self, _, _| app.refresh())
+                .build(),
+        ]);
+    }
+    fn refresh(&self) {
+        let imp = self.imp();
+        imp.apps_listbox.remove_all();
+        
+        let settings = gio::Settings::new(config::APP_ID);
+        for id in settings.get::<Vec<String>>("app-ids") {
+            let row = adw::ActionRow::new();
+            row.set_title(&id);
+            imp.apps_listbox.append(&row);
+        }
     }
 }

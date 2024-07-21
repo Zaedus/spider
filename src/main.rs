@@ -21,6 +21,9 @@
 mod application;
 mod config;
 mod window;
+mod util;
+mod apps;
+mod create_app_dialog;
 
 use self::application::SpiderApplication;
 use self::window::SpiderWindow;

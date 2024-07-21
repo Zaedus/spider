@@ -1,0 +1,53 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CreateAppDialog: Adw.Dialog {
+  title: "Create New Web App";
+
+  Adw.ToastOverlay toast_overlay {
+    Adw.ToolbarView {
+      [top]
+      Adw.HeaderBar {}
+      
+      Adw.Clamp {
+        maximum-size: 400;
+        tightening-threshold: 300;
+        margin-end: 10;
+        margin-start: 10;
+        margin-top: 5;
+        margin-bottom: 15;
+
+        Box {
+          orientation: vertical;
+          spacing: 15;
+
+          ListBox {
+            styles ["boxed-list"]
+            selection-mode: none;
+            
+            Adw.EntryRow url_entry {
+              title: "URL";
+              
+              entry-activated => $on_create_clicked_conditional() swapped;
+              changed => $on_url_changed() swapped;
+            }
+          }
+
+          Button button {
+            halign: center;
+
+            styles ["pill", "suggested-action"]
+            sensitive: false;
+
+            Stack button_stack {
+              Label button_label { label: "Create"; }
+              Spinner button_spinner {}
+            }
+
+            clicked => $on_create_clicked() swapped;
+          }
+        }
+      }
+    }
+  }
+}

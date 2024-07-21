@@ -4,12 +4,22 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.86"
+ashpd = { version = "0.9.0", features = ["async-std", "gtk4"] }
+async-iterator = "2.3.0"
+futures = "0.3.30"
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
+image = "0.25.1"
+isahc = "1.7.2"
+lazy_static = "1.5.0"
+scraper = { version = "0.19.1", features = ["atomic"] }
+url = "2.5.2"
+uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
 
 [dependencies.gtk]
 package = "gtk4"
 version = "0.9"
-features = ["v4_6"]
+features = ["v4_14"]
 
 [dependencies.adw]
 package = "libadwaita"

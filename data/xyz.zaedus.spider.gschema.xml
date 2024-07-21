@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist gettext-domain="spider">
 	<schema id="xyz.zaedus.spider" path="/xyz/zaedus/spider/">
+    <key name="app-ids" type="as">
+      <default>[]</default>
+    </key>
+    <key name="apps-settings" type="a{ss}">
+      <default>{}</default>
+    </key>
 	</schema>
 </schemalist>
