@@ -25,7 +25,6 @@ use gtk::{gio, glib};
 use crate::app_row::AppRow;
 use crate::application::settings;
 use crate::create_app_dialog::CreateAppDialog;
-use crate::config;
 
 mod imp {
 
@@ -39,7 +38,6 @@ mod imp {
         pub split_view: TemplateChild<adw::NavigationSplitView>,
         #[template_child]
         pub apps_listbox: TemplateChild<gtk::ListBox>,
-
     }
 
     #[glib::object_subclass]
@@ -80,6 +78,16 @@ mod imp {
             let dialog = CreateAppDialog::new();
             dialog.present(Some(&self.obj().clone()));
         }
+        #[template_callback]
+        fn on_app_selected(&self, row: Option<AppRow>) {
+            if let Some(row) = row {
+                self.obj()
+                    .clone()
+                    .upcast::<gtk::Widget>()
+                    .activate_action("app.open-app", Some(&row.id().to_variant()))
+                    .unwrap();
+            }
+        }
     }
 }
 
@@ -95,11 +103,9 @@ impl SpiderWindow {
             .build()
     }
     fn setup_gactions(&self) {
-        self.add_action_entries([
-            gio::ActionEntry::builder("refresh")
-                .activate(move |app: &Self, _, _| app.refresh())
-                .build(),
-        ]);
+        self.add_action_entries([gio::ActionEntry::builder("refresh")
+            .activate(move |app: &Self, _, _| app.refresh())
+            .build()]);
     }
     fn refresh(&self) {
         let imp = self.imp();
@@ -107,7 +113,7 @@ impl SpiderWindow {
         //let hidden = adw::ActionRow::new();
         //hidden.set_selectable(false);
         //imp.apps_listbox.append(&hidden);
-        
+
         let settings = settings();
         for id in settings.get::<Vec<String>>("app-ids") {
             imp.apps_listbox.append(&AppRow::new(id));

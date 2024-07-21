@@ -34,6 +34,8 @@ template $SpiderWindow: Adw.ApplicationWindow {
           activate-on-single-click: true;
           focusable: false;
 
+          row-selected => $on_app_selected() swapped;
+
           styles ["navigation-sidebar"]
         }
       }

@@ -1,17 +1,15 @@
 use adw::prelude::*;
 use adw::subclass::prelude::*;
+use gdk_pixbuf::Pixbuf;
 use glib::clone;
 use glib::Object;
-use gtk::{gdk, glib, gio};
+use gtk::{gdk, gio, glib};
 use std::cell::RefCell;
-use gdk_pixbuf::{Pixbuf};
-use gdk_pixbuf::prelude::*;
+use gio::MemoryInputStream;
 
 use crate::apps::{get_app_details, get_app_icon};
 
 mod imp {
-
-    use gtk::gio::MemoryInputStream;
 
     use super::*;
 
@@ -51,6 +49,7 @@ mod imp {
 
     impl AppRow {
         fn on_id_set(&self, id: String) {
+            self.id.replace(id.clone());
             glib::spawn_future_local(clone!(
                 #[weak(rename_to = _self)]
                 self,
@@ -60,11 +59,11 @@ mod imp {
                     let icon = get_app_icon(id.clone()).await.unwrap();
                     let details = get_app_details(id).with_icon(icon);
                     _self.title.set_label(&details.title);
-                    let bytes = glib::Bytes::from(
-                        details.icon.unwrap().as_slice(),
-                    );
+                    let bytes = glib::Bytes::from(details.icon.unwrap().as_slice());
                     let stream = MemoryInputStream::from_bytes(&bytes);
-                    let pixbuf = Pixbuf::from_stream_at_scale(&stream, 32, 32, true, gio::Cancellable::NONE).unwrap();
+                    let pixbuf =
+                        Pixbuf::from_stream_at_scale(&stream, 32, 32, true, gio::Cancellable::NONE)
+                            .unwrap();
                     let texture = gdk::Texture::for_pixbuf(&pixbuf);
                     _self.icon.set_paintable(Some(&texture));
                 }
@@ -75,7 +74,7 @@ mod imp {
 
 glib::wrapper! {
     pub struct AppRow(ObjectSubclass<imp::AppRow>)
-        @extends adw::ActionRow, gtk::Widget,
+        @extends adw::ActionRow, adw::PreferencesRow, gtk::ListBoxRow, gtk::Widget,
         @implements gtk::Accessible, gtk::Actionable, gtk::Buildable, gtk::ConstraintTarget;
 }
 

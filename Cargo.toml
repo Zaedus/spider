@@ -27,3 +27,8 @@ features = ["v4_14"]
 package = "libadwaita"
 version = "0.7"
 features = ["v1_5"]
+
+[dependencies.webkit]
+package = "webkit6"
+version = "0.4.0"
+features = ["v2_44"]

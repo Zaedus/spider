@@ -18,21 +18,22 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-mod application;
-mod config;
-mod window;
-mod util;
-mod apps;
-mod create_app_dialog;
 mod app_row;
+mod app_window;
+mod application;
+mod apps;
+mod config;
+mod create_app_dialog;
+mod util;
+mod window;
 
 use self::application::SpiderApplication;
 use self::window::SpiderWindow;
 
 use config::{GETTEXT_PACKAGE, LOCALEDIR, PKGDATADIR};
 use gettextrs::{bind_textdomain_codeset, bindtextdomain, textdomain};
-use gtk::{gio, glib};
 use gtk::prelude::*;
+use gtk::{gio, glib};
 
 fn main() -> glib::ExitCode {
     // Set up gettext translations

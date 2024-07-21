@@ -1,8 +1,8 @@
+use adw::prelude::*;
 use adw::subclass::prelude::*;
-use glib::clone;
-use gtk::prelude::*;
 use gtk::{gio, glib};
 
+use crate::app_window::AppWindow;
 use crate::config;
 use crate::SpiderWindow;
 
@@ -11,7 +11,6 @@ pub fn settings() -> gio::Settings {
 }
 
 mod imp {
-    use crate::apps::{get_app_details, get_app_icon};
 
     use super::*;
 
@@ -56,12 +55,14 @@ mod imp {
         fn command_line(&self, command_line: &gio::ApplicationCommandLine) -> glib::ExitCode {
             if let Some(id) = command_line.arguments().get(1) {
                 let id: String = id.to_str().unwrap().into();
-                let details = get_app_details(id);
-                println!("{details:?}");
+                let window = AppWindow::new(id);
+                self.obj().add_window(&window);
+                window.present();
+                glib::ExitCode::SUCCESS
+            } else {
+                self.activate();
+                glib::ExitCode::SUCCESS
             }
-
-            self.activate();
-            glib::ExitCode::SUCCESS
         }
     }
 
@@ -91,6 +92,16 @@ impl SpiderApplication {
             gio::ActionEntry::builder("about")
                 .activate(move |app: &Self, _, _| app.show_about())
                 .build(),
+            gio::ActionEntry::builder("open-app")
+                .parameter_type(Some(&String::static_variant_type()))
+                .activate(move |app: &Self, _, id| {
+                    app.open_app(
+                        id.expect("no id provided")
+                            .get::<String>()
+                            .expect("invalid id type provided"),
+                    )
+                })
+                .build(),
         ]);
     }
 
@@ -107,5 +118,19 @@ impl SpiderApplication {
             .build();
 
         about.present();
+    }
+
+    fn open_app(&self, id: String) {
+        for window in self.windows() {
+            if let Ok(window) = window.downcast::<AppWindow>() {
+                if window.id() == id {
+                    window.present();
+                    return;
+                } 
+            }
+        }
+        let window = AppWindow::new(id);
+        self.add_window(&window);
+        window.present();
     }
 }
