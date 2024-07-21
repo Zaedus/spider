@@ -1,0 +1,36 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $AppRow: Adw.ActionRow {
+  activatable: true;
+  focusable: false;
+  halign: fill;
+  hexpand: true;
+
+  Box {
+    orientation: horizontal;
+    spacing: 10;
+    halign: start;
+    hexpand: true;
+
+    Image icon {
+      halign: start;
+      hexpand: false;
+      pixel-size: 32;
+    }
+    Box {
+      orientation: vertical;
+      halign: fill;
+      valign: center;
+      vexpand: true;
+      spacing: 2;
+
+      Label title {
+        halign: start;
+        valign: center;
+        max-width-chars: 20;
+        styles ["title"]
+      }
+    }
+  }
+}

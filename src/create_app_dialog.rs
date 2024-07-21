@@ -10,6 +10,10 @@ use crate::{apps::install_app, util};
 
 mod imp {
 
+    use uuid::Uuid;
+
+    use crate::apps::AppDetails;
+
     use super::*;
 
     #[derive(Default, Debug, gtk::CompositeTemplate)]
@@ -85,13 +89,18 @@ mod imp {
 
     impl CreateAppDialog {
         async fn create_app(&self, url: Url) -> anyhow::Result<()> {
-            let website_meta = util::get_website_meta(url).await?;
+            let website_meta = util::get_website_meta(url.clone()).await?;
             install_app(
-                website_meta.create_app_data(),
+                AppDetails::new(
+                    Uuid::new_v4().to_string(),
+                    website_meta.title,
+                    url.to_string(),
+                ),
                 website_meta.icon,
                 &WindowIdentifier::from_native(&self.obj().root().unwrap()).await,
             )
             .await?;
+            self.obj().activate_action("win.refresh", None)?;
             self.obj().close();
             Ok(())
         }

@@ -1,12 +1,18 @@
 use adw::subclass::prelude::*;
+use glib::clone;
 use gtk::prelude::*;
 use gtk::{gio, glib};
 
-
-use crate::config::{self, VERSION};
+use crate::config;
 use crate::SpiderWindow;
 
+pub fn settings() -> gio::Settings {
+    gio::Settings::new(config::APP_ID)
+}
+
 mod imp {
+    use crate::apps::{get_app_details, get_app_icon};
+
     use super::*;
 
     #[derive(Debug, Default)]
@@ -46,6 +52,17 @@ mod imp {
             // Ask the window manager/compositor to present the window
             window.present();
         }
+
+        fn command_line(&self, command_line: &gio::ApplicationCommandLine) -> glib::ExitCode {
+            if let Some(id) = command_line.arguments().get(1) {
+                let id: String = id.to_str().unwrap().into();
+                let details = get_app_details(id);
+                println!("{details:?}");
+            }
+
+            self.activate();
+            glib::ExitCode::SUCCESS
+        }
     }
 
     impl GtkApplicationImpl for SpiderApplication {}
@@ -84,7 +101,7 @@ impl SpiderApplication {
             .application_name("spider")
             .application_icon(config::APP_ID)
             .developer_name("Zaedus")
-            .version(VERSION)
+            .version(config::VERSION)
             .developers(vec!["Zaedus"])
             .copyright("© 2024 Zaedus")
             .build();

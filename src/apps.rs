@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 use ashpd::{
     desktop::{
@@ -7,28 +7,87 @@ use ashpd::{
     },
     WindowIdentifier,
 };
-use gtk::{gio, prelude::SettingsExtManual};
+use gtk::prelude::SettingsExtManual;
 
-use crate::{config, util::Image};
+use crate::{application::settings, config, util::Image};
 
-pub struct AppData {
+type AppsSettings = HashMap<String, HashMap<String, String>>;
+
+#[derive(Default, Debug)]
+pub struct AppDetails {
     pub id: String,
+    pub url: String,
     pub title: String,
+    pub icon: Option<Vec<u8>>,
 }
 
-fn save_app(id: String) -> anyhow::Result<()> {
-    let settings = gio::Settings::new(config::APP_ID);
-    let mut apps = settings.get::<Vec<String>>("app-ids");
-    if !apps.contains(&id) {
-        apps.push(id);
+impl AppDetails {
+    pub fn new(id: String, title: String, url: String,) -> Self {
+        Self {
+            id,
+            url,
+            title,
+            ..Default::default()
+        }
     }
+    pub fn to_hashmap(&self) -> HashMap<String, String> {
+        HashMap::from([
+            ("url".into(), self.url.clone()),
+            ("title".into(), self.title.clone()),
+        ])
+    }
+    pub fn with_icon(self, icon: Vec<u8>) -> Self {
+        AppDetails {
+            icon: Some(icon),
+            ..self
+        }
+    }
+}
+
+#[inline]
+fn id_to_desktop(id: String) -> String {
+    format!("{}.{}.desktop", config::APP_ID, id)
+}
+
+fn save_app(details: AppDetails) -> anyhow::Result<()> {
+    let settings = settings();
+    let mut apps = settings.get::<Vec<String>>("app-ids");
+    if !apps.contains(&details.id) {
+        apps.push(details.id.clone());
+    }
+
+    let mut apps_settings = settings.get::<AppsSettings>("apps-settings");
+    apps_settings.insert(details.id.clone(), details.to_hashmap());
+
     settings.set("app-ids", apps)?;
+    settings.set("apps-settings", apps_settings)?;
 
     Ok(())
 }
 
+pub async fn get_app_icon(id: String) -> anyhow::Result<Vec<u8>> {
+    let desktop_id = id_to_desktop(id.clone());
+    let proxy = DynamicLauncherProxy::new().await?;
+    let Icon::Bytes(icon) = proxy.icon(desktop_id.as_str()).await?.icon() else {
+        unreachable!();
+    };
+    Ok(icon)
+}
+
+pub fn get_app_details(id: String) -> AppDetails {
+    let settings = settings();
+    let settings = settings.get::<AppsSettings>("apps-settings");
+    let settings = settings.get(&id).unwrap();
+    AppDetails {
+        id,
+        url: settings.get("url").unwrap().to_string(),
+        title: settings.get("title").unwrap().to_string(),
+        icon: None,
+    }
+}
+
 pub async fn install_app(
-    app_data: AppData,
+    details: AppDetails,
     icon: Image,
     wid: &WindowIdentifier,
 ) -> anyhow::Result<()> {
@@ -42,9 +101,10 @@ pub async fn install_app(
         .launcher_type(LauncherType::Application);
 
     let response = proxy
-        .prepare_install(wid, app_data.title.as_str(), icon, options)
+        .prepare_install(wid, details.title.as_str(), icon, options)
         .await?
         .response()?;
+    println!("{:?}", response.icon());
 
     let desktop_content = format!(
         r#"[Desktop Entry]
@@ -53,18 +113,17 @@ Terminal=false
 Type=Application
 Categories=Network;
 Exec=env spider {}"#,
-        app_data.title, app_data.id
+        details.title, details.id
     );
-    println!("{}", desktop_content);
     proxy
         .install(
             response.token(),
-            format!("{}.{}.desktop", config::APP_ID, app_data.id).as_str(),
+            id_to_desktop(details.id.clone()).as_str(),
             desktop_content.as_str(),
         )
         .await?;
 
-    save_app(app_data.id)?;
+    save_app(details)?;
 
     Ok(())
 }

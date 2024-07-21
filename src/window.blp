@@ -30,6 +30,10 @@ template $SpiderWindow: Adw.ApplicationWindow {
         }
 
         ListBox apps_listbox {
+          selection-mode: single;
+          activate-on-single-click: true;
+          focusable: false;
+
           styles ["navigation-sidebar"]
         }
       }

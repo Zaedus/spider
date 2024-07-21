@@ -4,7 +4,7 @@
     <key name="app-ids" type="as">
       <default>[]</default>
     </key>
-    <key name="apps-settings" type="a{ss}">
+    <key name="apps-settings" type="a{sa{ss}}">
       <default>{}</default>
     </key>
 	</schema>

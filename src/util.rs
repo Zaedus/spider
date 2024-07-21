@@ -6,20 +6,11 @@ use lazy_static::lazy_static;
 use scraper::{Html, Selector};
 use std::{collections::HashSet, path::Path};
 use url::Url;
-use uuid::Uuid;
-
-use crate::apps::AppData;
 
 #[derive(Debug)]
 pub struct WebsiteMeta {
     pub icon: Image,
     pub title: String,
-}
-
-impl WebsiteMeta {
-    pub fn create_app_data(&self) -> AppData {
-        AppData { id: Uuid::new_v4().to_string(), title: self.title.clone() }
-    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

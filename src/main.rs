@@ -24,6 +24,7 @@ mod window;
 mod util;
 mod apps;
 mod create_app_dialog;
+mod app_row;
 
 use self::application::SpiderApplication;
 use self::window::SpiderWindow;
@@ -48,7 +49,7 @@ fn main() -> glib::ExitCode {
     // Create a new GtkApplication. The application manages our main loop,
     // application windows, integration with the window manager/compositor, and
     // desktop features such as file opening and single-instance applications.
-    let app = SpiderApplication::new(config::APP_ID, &gio::ApplicationFlags::empty());
+    let app = SpiderApplication::new(config::APP_ID, &gio::ApplicationFlags::HANDLES_COMMAND_LINE);
 
     // Run the application. This function will block until the application
     // exits. Upon return, we have our exit code to return to the shell. (This

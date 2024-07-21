@@ -22,6 +22,8 @@ use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gtk::{gio, glib};
 
+use crate::app_row::AppRow;
+use crate::application::settings;
 use crate::create_app_dialog::CreateAppDialog;
 use crate::config;
 
@@ -63,6 +65,7 @@ mod imp {
             let obj = self.obj();
             obj.setup_gactions();
             obj.refresh();
+            self.apps_listbox.unselect_all();
         }
     }
     impl WidgetImpl for SpiderWindow {}
@@ -101,12 +104,13 @@ impl SpiderWindow {
     fn refresh(&self) {
         let imp = self.imp();
         imp.apps_listbox.remove_all();
+        //let hidden = adw::ActionRow::new();
+        //hidden.set_selectable(false);
+        //imp.apps_listbox.append(&hidden);
         
-        let settings = gio::Settings::new(config::APP_ID);
+        let settings = settings();
         for id in settings.get::<Vec<String>>("app-ids") {
-            let row = adw::ActionRow::new();
-            row.set_title(&id);
-            imp.apps_listbox.append(&row);
+            imp.apps_listbox.append(&AppRow::new(id));
         }
     }
 }

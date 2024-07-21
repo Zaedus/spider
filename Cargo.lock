@@ -2501,8 +2501,10 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "ashpd",
+ "async-channel 2.3.1",
  "async-iterator",
  "futures",
+ "gdk-pixbuf",
  "gettext-rs",
  "gtk4",
  "image",
