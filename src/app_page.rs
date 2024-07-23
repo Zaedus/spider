@@ -200,7 +200,6 @@ mod imp {
             };
             self.unsaved_details.replace(Some(unsaved));
             let diff_sig = self.diff_significance();
-            println!("{diff_sig:?}");
             self.headerbar_stack.set_visible_child(
                 &if diff_sig != DiffSignificance::NoDifference {
                     &self.edit_headerbar

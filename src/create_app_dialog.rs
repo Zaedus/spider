@@ -68,7 +68,6 @@ mod imp {
 
             if let Ok(url) = Url::parse(self.url_entry.text().as_str()) {
                 if let Err(err) = self.create_app(url).await {
-                    println!("{err:?}");
                     self.toast_overlay
                         .add_toast(adw::Toast::new(err.to_string().as_str()));
                 }

@@ -157,7 +157,6 @@ pub async fn install_app(
         .prepare_install(wid, details.title.as_str(), icon, options)
         .await?
         .response()?;
-    println!("{:?}", response.icon());
 
     let desktop_content = format!(
         r#"[Desktop Entry]

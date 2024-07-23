@@ -128,8 +128,8 @@ impl Image {
     pub fn from_buffer(buffer: Vec<u8>, is_svg: bool) -> anyhow::Result<Self> {
         if is_svg {
             Ok(Image {
-                buffer, 
-                size: ImageSize::Variable
+                buffer,
+                size: ImageSize::Variable,
             })
         } else {
             let format = image::guess_format(buffer.as_slice())?;
@@ -150,8 +150,8 @@ impl Image {
                 buffer
             };
             Ok(Image {
-                buffer, 
-                size: ImageSize::Sized((image.width(), image.height()))
+                buffer,
+                size: ImageSize::Sized((image.width(), image.height())),
             })
         }
     }
@@ -167,7 +167,7 @@ lazy_static! {
     .unwrap();
     static ref title_selctor: Selector = Selector::parse("title").unwrap();
     static ref http: isahc::HttpClient = isahc::HttpClient::builder()
-        .redirect_policy(config::RedirectPolicy::Limit(3))
+        .redirect_policy(config::RedirectPolicy::Limit(10))
         .build()
         .unwrap();
 }
@@ -176,16 +176,15 @@ pub fn to_gdk_texture(buffer: &[u8], size: i32) -> gdk::Texture {
     let bytes = glib::Bytes::from(buffer);
     let stream = gio::MemoryInputStream::from_bytes(&bytes);
     let pixbuf =
-        Pixbuf::from_stream_at_scale(&stream, size, size, true, gio::Cancellable::NONE)
-            .unwrap();
+        Pixbuf::from_stream_at_scale(&stream, size, size, true, gio::Cancellable::NONE).unwrap();
     gdk::Texture::for_pixbuf(&pixbuf)
 }
-
 
 async fn get_image_metadata(url: Url) -> anyhow::Result<Image> {
     let mut response = http.get_async(url.to_string()).await?;
     let buffer = response.bytes().await?;
-    let extension = url.path_segments()
+    let extension = url
+        .path_segments()
         .and_then(|x| x.last())
         .and_then(|x| Path::new(x).extension())
         .and_then(|x| x.to_str());
@@ -194,30 +193,27 @@ async fn get_image_metadata(url: Url) -> anyhow::Result<Image> {
 }
 
 pub async fn get_website_meta(url: Url) -> anyhow::Result<WebsiteMeta> {
-    let html = http.get_async(url.to_string()).await?.text().await?;
+    let mut req = http.get_async(url.to_string()).await?;
+    let html = req.text().await?;
+    let url: Url = Url::parse(req.effective_uri().unwrap().to_string().as_str()).unwrap();
     let doc = Html::parse_document(html.as_str());
     let mut paths = doc
         .select(&icon_selector)
         .filter_map(|elm| elm.attr("href"))
         .collect::<HashSet<&str>>();
+    paths.insert("favicon.ico");
+    paths.insert("favicon.png");
     paths.insert("/favicon.ico");
     paths.insert("/favicon.png");
-
+    let paths = paths
+        .into_iter()
+        .filter_map(|path| url.join(path).ok())
+        .collect::<HashSet<Url>>();
     println!("{:?}", paths);
-    println!("{:?}", url.join("/favicon.ico").map(|x| x.to_string()));
-    let metadata = join_all(
-        paths
-            .into_iter()
-            .filter_map(|path| url.join(path).ok())
-            .map(get_image_metadata),
-    )
-    .await;
+    let metadata = join_all(paths.into_iter().map(get_image_metadata)).await;
     let best_image = metadata
         .iter()
-        .filter_map(|x| {
-            println!("{x:?}");
-            x.as_ref().ok()
-        })
+        .filter_map(|x| x.as_ref().ok())
         .filter(|x| {
             if let ImageSize::Sized((w, _)) = x.size {
                 w <= 256
