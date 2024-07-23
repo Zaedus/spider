@@ -5,54 +5,44 @@ template $SpiderWindow: Adw.ApplicationWindow {
   default-width: 800;
   default-height: 600;
 
-  Adw.NavigationSplitView split_view {
-    min-sidebar-width: 220;
-    [sidebar]
-    Adw.NavigationPage {
-      title: "Applications";
-      Adw.ToolbarView {
-        
-        [top]
-        Adw.HeaderBar {
-          [start]
-          Button {
-            icon-name: "list-add";
+  Adw.ToastOverlay toast_overlay {
+    Adw.NavigationSplitView split_view {
+      min-sidebar-width: 250;
+      [sidebar]
+      Adw.NavigationPage {
+        title: "Applications";
+        Adw.ToolbarView {
+          
+          [top]
+          Adw.HeaderBar {
+            [start]
+            Button {
+              icon-name: "list-add";
 
-            clicked => $on_add_clicked() swapped;
+              clicked => $on_add_clicked() swapped;
+            }
+            [end]
+            MenuButton {
+              primary: true;
+              icon-name: 'open-menu-symbolic';
+              tooltip-text: _('Menu');
+              menu-model: primary_menu;
+            }
           }
-          [end]
-          MenuButton {
-            primary: true;
-            icon-name: 'open-menu-symbolic';
-            tooltip-text: _('Menu');
-            menu-model: primary_menu;
+
+          ListBox apps_listbox {
+            selection-mode: single;
+            activate-on-single-click: true;
+            focusable: false;
+
+            row-selected => $on_app_selected() swapped;
+
+            styles ["navigation-sidebar"]
           }
-        }
-
-        ListBox apps_listbox {
-          selection-mode: single;
-          activate-on-single-click: true;
-          focusable: false;
-
-          row-selected => $on_app_selected() swapped;
-
-          styles ["navigation-sidebar"]
         }
       }
-    }
-    [content]
-    Adw.NavigationPage {
-      title: "Spider";
-      Adw.ToolbarView {
-        [top]
-        Adw.HeaderBar {}
-        
-        Adw.StatusPage {
-          icon-name: "go-home";
-          title: "Welcome to Spider";
-          description: "Create a new app or navigate to one you already made!";
-        }
-      }
+      [content]
+      $HomePage home_page {}
     }
   }
 }
@@ -60,15 +50,6 @@ template $SpiderWindow: Adw.ApplicationWindow {
 
 
 menu primary_menu {
-  section {
-    item {
-      label: _('_Keyboard Shortcuts');
-      action: 'win.show-help-overlay';
-    }
-
-    item {
-      label: _('_About Spider');
-      action: 'app.about';
-    }
-  }
+  item (_("_Keyboard Shortcuts"), "win.show-help-overlay")
+  item (_("_About Spider"), "app.about")
 }

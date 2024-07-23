@@ -1,92 +1,128 @@
 using Gtk 4.0;
 using Adw 1;
 
-template $AppPage : Adw.NavigationPage {
+template $AppPage: Adw.NavigationPage {
   Adw.ToolbarView {
     [top]
-    Adw.HeaderBar {
-      show-title: false;
+    Stack headerbar_stack {
+      Adw.HeaderBar normal_headerbar {
+        show-title: false;
 
-      [start]
-      Button {
-        label: "Show";
+        [end]
+        MenuButton {
+          icon-name: 'view-more-symbolic';
+          tooltip-text: _('Menu');
+          menu-model: page_menu;
+        }
+      }
 
-        clicked => $on_show_clicked() swapped;
+      Adw.HeaderBar edit_headerbar {
+        show-title: false;
+
+        [start]
+        Button {
+          label: "Cancel";
+          clicked => $on_cancel_clicked() swapped;
+        }
+
+        [end]
+        Button save_button {
+          label: "Save";
+
+          styles [
+            "suggested-action"
+          ]
+
+          clicked => $on_save_clicked() swapped;
+        }
       }
     }
 
-    Adw.Clamp {
-      maximum-size: 600;
-      tightening-threshold: 500;
-      margin-start: 20;
-      margin-end: 20;
+    ScrolledWindow {
+      Adw.Clamp {
+        maximum-size: 600;
+        tightening-threshold: 500;
+        margin-start: 20;
+        margin-end: 20;
+        width-request: 300;
 
-      width-request: 300;
+        Box {
+          orientation: vertical;
+          spacing: 10;
+          hexpand: true;
+          halign: fill;
 
-      Box {
-        orientation: vertical;
-        spacing: 10;
-        hexpand: true;
-        halign: fill;
+          Button {
+            vexpand: false;
+            hexpand: false;
+            valign: center;
+            halign: center;
 
-        Button {
-          vexpand: false;
-          hexpand: false;
-          valign: center;
-          halign: center;
+            Overlay {
+              [overlay]
+              Image {
+                icon-name: "document-edit-symbolic";
+                valign: end;
+                halign: end;
 
-          Overlay {
-            [overlay]
-            Image {
-              icon-name: "document-edit-symbolic";
-              valign: end;
-              halign: end;
+                styles [
+                  "right"
+                ]
+              }
 
-              styles ["right"]
-            }
-            Image icon_image {
-              pixel-size: 96;
-              margin-end: 5;
-              margin-top: 5;
-              margin-start: 5;
-              margin-bottom: 5;
+              Image icon_image {
+                pixel-size: 96;
+                margin-end: 5;
+                margin-top: 5;
+                margin-start: 5;
+                margin-bottom: 5;
+              }
             }
           }
-        }
 
-        Adw.PreferencesPage pref_page {
           Adw.PreferencesGroup {
             title: "General";
             description: "Basic options";
 
             Adw.EntryRow url_entry {
               title: "URL";
+              show-apply-button: true;
+              apply => $update_unsaved_details_cb() swapped;
             }
+
             Adw.EntryRow title_entry {
               title: "Title";
+              show-apply-button: true;
+              apply => $update_unsaved_details_cb() swapped;
             }
           }
+
           Adw.PreferencesGroup {
             title: "Custom Colors";
             description: "Set custom header bar colors that better match your web app for both dark and light themes";
 
-            Adw.ExpanderRow lt_colors {
+            Adw.ExpanderRow light_colors {
               title: "Light Theme Colors";
               show-enable-switch: true;
 
               Adw.ActionRow {
                 title: "Background Color";
-                ColorDialogButton ltb_color {
+
+                ColorDialogButton lbg_color {
                   valign: center;
+
                   dialog: ColorDialog {
                     title: "Light Theme Background Color";
                   };
                 }
               }
+
               Adw.ActionRow {
                 title: "Foreground Color";
-                ColorDialogButton ltf_color {
+
+                ColorDialogButton lfg_color {
                   valign: center;
+
                   dialog: ColorDialog {
                     title: "Light Theme Foreground Color";
                   };
@@ -94,23 +130,28 @@ template $AppPage : Adw.NavigationPage {
               }
             }
 
-            Adw.ExpanderRow dt_colors {
+            Adw.ExpanderRow dark_colors {
               title: "Dark Theme Colors";
               show-enable-switch: true;
 
               Adw.ActionRow {
                 title: "Background Color";
-                ColorDialogButton dtb_color {
+
+                ColorDialogButton dbg_color {
                   valign: center;
+
                   dialog: ColorDialog {
                     title: "Dark Theme Background Color";
                   };
                 }
               }
+
               Adw.ActionRow {
                 title: "Foreground Color";
-                ColorDialogButton dtf_color {
+
+                ColorDialogButton dfg_color {
                   valign: center;
+
                   dialog: ColorDialog {
                     title: "Dark Theme Foreground Color";
                   };
@@ -123,3 +164,8 @@ template $AppPage : Adw.NavigationPage {
     }
   }
 }
+
+// This is a template child that gets populated when the page is built
+// Until there is a good way of accessing the menu's items (so that I can set the action target),
+// I'm just going to manually build it
+menu page_menu {}

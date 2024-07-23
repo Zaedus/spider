@@ -1,17 +1,13 @@
 use adw::prelude::*;
 use adw::subclass::prelude::*;
-use gdk_pixbuf::Pixbuf;
 use glib::clone;
 use glib::Object;
-use gtk::{gdk, gio, glib};
+use gtk::{gio, glib};
 use std::cell::{OnceCell, RefCell};
-use gio::MemoryInputStream;
 
-use crate::apps::{get_app_details, get_app_icon};
+use crate::apps::{get_app_details, get_app_icon, AppDetails};
 
 mod imp {
-
-    use crate::apps::AppDetails;
 
     use super::*;
 
@@ -23,6 +19,8 @@ mod imp {
         pub icon: TemplateChild<gtk::Image>,
         #[template_child]
         pub title: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub subtitle: TemplateChild<gtk::Label>,
 
         #[property(get, set = Self::on_id_set)]
         pub id: RefCell<String>,
@@ -34,7 +32,7 @@ mod imp {
     impl ObjectSubclass for AppRow {
         const NAME: &'static str = "AppRow";
         type Type = super::AppRow;
-        type ParentType = adw::ActionRow;
+        type ParentType = gtk::ListBoxRow;
 
         fn class_init(klass: &mut Self::Class) {
             klass.bind_template();
@@ -48,8 +46,6 @@ mod imp {
     impl ObjectImpl for AppRow {}
     impl WidgetImpl for AppRow {}
     impl ListBoxRowImpl for AppRow {}
-    impl PreferencesRowImpl for AppRow {}
-    impl ActionRowImpl for AppRow {}
 
     impl AppRow {
         fn on_id_set(&self, id: String) {
@@ -60,11 +56,12 @@ mod imp {
                 #[strong]
                 id,
                 async move {
-                    let icon = get_app_icon(id.clone()).await.unwrap();
+                    let icon = get_app_icon(id.as_str()).await.unwrap();
                     let details = get_app_details(id).with_icon(icon);
                     _self.details.set(details.clone()).expect("attempted to set id more than once");
 
                     _self.title.set_label(&details.title);
+                    _self.subtitle.set_label(&details.url);
                     _self.icon.set_paintable(Some(&details.to_gdk_texture(64)));
                 }
             ));

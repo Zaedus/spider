@@ -1,0 +1,17 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $HomePage: Adw.NavigationPage {
+  title: "Spider";
+
+  Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {}
+
+    Adw.StatusPage {
+      icon-name: "go-home";
+      title: "Welcome to Spider";
+      description: "Create a new app or navigate to one you already made!";
+    }
+  }
+}

@@ -20,15 +20,17 @@
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
+use glib::clone;
 use gtk::{gio, glib};
 
+use crate::app_page::AppPage;
 use crate::app_row::AppRow;
 use crate::application::settings;
+use crate::apps::uninstall_app;
 use crate::create_app_dialog::CreateAppDialog;
+use crate::home_page::HomePage;
 
 mod imp {
-
-    use crate::app_page::AppPage;
 
     use super::*;
 
@@ -40,6 +42,10 @@ mod imp {
         pub split_view: TemplateChild<adw::NavigationSplitView>,
         #[template_child]
         pub apps_listbox: TemplateChild<gtk::ListBox>,
+        #[template_child]
+        pub toast_overlay: TemplateChild<adw::ToastOverlay>,
+        #[template_child]
+        pub home_page: TemplateChild<HomePage>,
     }
 
     #[glib::object_subclass]
@@ -94,7 +100,8 @@ mod imp {
 
 glib::wrapper! {
     pub struct SpiderWindow(ObjectSubclass<imp::SpiderWindow>)
-        @extends gtk::Widget, gtk::Window, gtk::ApplicationWindow, adw::ApplicationWindow,        @implements gio::ActionGroup, gio::ActionMap;
+        @extends gtk::Widget, gtk::Window, gtk::ApplicationWindow, adw::ApplicationWindow,
+        @implements gio::ActionGroup, gio::ActionMap, gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native, gtk::Root, gtk::ShortcutManager;
 }
 
 impl SpiderWindow {
@@ -104,20 +111,104 @@ impl SpiderWindow {
             .build()
     }
     fn setup_gactions(&self) {
-        self.add_action_entries([gio::ActionEntry::builder("refresh")
-            .activate(move |app: &Self, _, _| app.refresh())
-            .build()]);
+        self.add_action_entries([
+            gio::ActionEntry::builder("refresh")
+                .activate(move |win: &Self, _, _| win.refresh())
+                .build(),
+            gio::ActionEntry::builder("delete")
+                .parameter_type(Some(&String::static_variant_type()))
+                .activate(move |win: &Self, _, id| {
+                    win.confirm_delete_app(
+                        id.expect("no id provided")
+                            .get::<String>()
+                            .expect("invalid id type provided"),
+                    );
+                })
+                .build(),
+            gio::ActionEntry::builder("notify")
+                .parameter_type(Some(&String::static_variant_type()))
+                .activate(move |win: &Self, _, msg| {
+                    win.toast(
+                        msg.expect("no message provided")
+                            .get::<String>()
+                            .expect("invalid message type provided")
+                            .as_str(),
+                    )
+                })
+                .build(),
+        ]);
     }
+    fn selected_page_id(&self) -> Option<String> {
+        self.imp()
+            .apps_listbox
+            .selected_row()
+            .and_downcast::<AppRow>()
+            .map(|x| x.id())
+    }
+
+    async fn delete_app(&self, id: String) -> anyhow::Result<()> {
+        uninstall_app(id.as_str()).await?;
+        self.refresh();
+        Ok(())
+    }
+
+    fn confirm_delete_app(&self, id: String) {
+        let confirm_dialog = adw::MessageDialog::new(
+            Some(self),
+            Some("Are you sure you want to delete this app?"),
+            Some("This action CANNOT be undone."),
+        );
+        confirm_dialog.add_responses(&[("delete", "Delete"), ("cancel", "Cancel")]);
+        confirm_dialog.set_response_appearance("delete", adw::ResponseAppearance::Destructive);
+        confirm_dialog.present();
+        confirm_dialog.connect_response(
+            Some("delete"),
+            clone!(
+                #[strong(rename_to=_self)]
+                self,
+                #[strong]
+                id,
+                move |_, _| {
+                    glib::spawn_future_local(clone!(
+                        #[strong]
+                        _self,
+                        #[strong]
+                        id,
+                        async move {
+                            let message = match _self.delete_app(id).await {
+                                Ok(_) => "Successfully deleted app!".to_string(),
+                                Err(err) => err.to_string(),
+                            };
+                            _self.toast(message.as_str());
+                        }
+                    ));
+                }
+            ),
+        );
+    }
+
     fn refresh(&self) {
         let imp = self.imp();
+        let selected_id = self.selected_page_id();
         imp.apps_listbox.remove_all();
-        //let hidden = adw::ActionRow::new();
-        //hidden.set_selectable(false);
-        //imp.apps_listbox.append(&hidden);
 
         let settings = settings();
         for id in settings.get::<Vec<String>>("app-ids") {
-            imp.apps_listbox.append(&AppRow::new(id));
+            let row = AppRow::new(id);
+            imp.apps_listbox.append(&row);
+            if let Some(selected_id) = selected_id.as_deref() {
+                if selected_id == row.id() {
+                    imp.apps_listbox.select_row(Some(&row));
+                }
+            }
         }
+        if self.selected_page_id().is_none() {
+            self.imp()
+                .split_view
+                .set_content(Some(&HomePage::default()));
+        }
+    }
+    fn toast(&self, message: &str) {
+        self.imp().toast_overlay.add_toast(adw::Toast::new(message));
     }
 }

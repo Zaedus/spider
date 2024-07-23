@@ -1,11 +1,12 @@
 using Gtk 4.0;
 using Adw 1;
 
-template $AppRow: Adw.ActionRow {
+template $AppRow: ListBoxRow {
   activatable: true;
   focusable: false;
   halign: fill;
   hexpand: true;
+  margin-top: 1;
 
   Box {
     orientation: horizontal;
@@ -24,12 +25,20 @@ template $AppRow: Adw.ActionRow {
       valign: center;
       vexpand: true;
       spacing: 2;
+      margin-top: 6;
+      margin-bottom: 6;
 
       Label title {
         halign: start;
-        valign: center;
-        max-width-chars: 20;
+        valign: start;
+        ellipsize: end;
         styles ["title"]
+      }
+      Label subtitle {
+        halign: start;
+        valign: end;
+        ellipsize: end;
+        styles ["subtitle"]
       }
     }
   }

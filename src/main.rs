@@ -27,6 +27,7 @@ mod config;
 mod create_app_dialog;
 mod util;
 mod window;
+mod home_page;
 
 use self::application::SpiderApplication;
 use self::window::SpiderWindow;

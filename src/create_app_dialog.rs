@@ -91,12 +91,12 @@ mod imp {
         async fn create_app(&self, url: Url) -> anyhow::Result<()> {
             let website_meta = util::get_website_meta(url.clone()).await?;
             install_app(
-                AppDetails::new(
+                &AppDetails::new(
                     Uuid::new_v4().to_string(),
                     website_meta.title,
                     url.to_string(),
                 ),
-                website_meta.icon,
+                website_meta.icon.buffer,
                 &WindowIdentifier::from_native(&self.obj().root().unwrap()).await,
             )
             .await?;
