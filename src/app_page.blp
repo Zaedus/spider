@@ -48,37 +48,9 @@ template $AppPage: Adw.NavigationPage {
 
         Box {
           orientation: vertical;
-          spacing: 10;
+          spacing: 20;
           hexpand: true;
           halign: fill;
-
-          Button {
-            vexpand: false;
-            hexpand: false;
-            valign: center;
-            halign: center;
-
-            Overlay {
-              [overlay]
-              Image {
-                icon-name: "document-edit-symbolic";
-                valign: end;
-                halign: end;
-
-                styles [
-                  "right"
-                ]
-              }
-
-              Image icon_image {
-                pixel-size: 96;
-                margin-end: 5;
-                margin-top: 5;
-                margin-start: 5;
-                margin-bottom: 5;
-              }
-            }
-          }
 
           Adw.PreferencesGroup {
             title: "General";
@@ -94,6 +66,19 @@ template $AppPage: Adw.NavigationPage {
               title: "Title";
               show-apply-button: true;
               apply => $update_unsaved_details_cb() swapped;
+            }
+
+            Adw.ActionRow {
+              title: "Icon";
+              subtitle: "Icon MUST be square";
+
+              Button {
+                icon-name: "image-symbolic";
+                valign: center;
+                Image icon_image {}
+
+                clicked => $on_icon_clicked() swapped;
+              }
             }
           }
 

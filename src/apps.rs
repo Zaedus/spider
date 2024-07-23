@@ -12,7 +12,7 @@ use gio::MemoryInputStream;
 use gtk::prelude::SettingsExtManual;
 use gtk::{gdk, gio, glib};
 
-use crate::{application::settings, config, util::Image};
+use crate::{application::settings, config, util::{to_gdk_texture, Image}};
 
 type AppsSettings = HashMap<String, HashMap<String, String>>;
 
@@ -63,12 +63,7 @@ impl AppDetails {
         }
     }
     pub fn to_gdk_texture(&self, size: i32) -> gdk::Texture {
-        let bytes = glib::Bytes::from(self.icon.clone().unwrap().as_slice());
-        let stream = MemoryInputStream::from_bytes(&bytes);
-        let pixbuf =
-            Pixbuf::from_stream_at_scale(&stream, size, size, true, gio::Cancellable::NONE)
-                .unwrap();
-        gdk::Texture::for_pixbuf(&pixbuf)
+        to_gdk_texture(self.icon.clone().unwrap().as_slice(), size)
     }
 }
 
@@ -154,8 +149,8 @@ pub async fn install_app(
 
     let options = PrepareInstallOptions::default()
         .modal(true)
-        .editable_icon(true)
-        .editable_name(true)
+        .editable_icon(false)
+        .editable_name(false)
         .launcher_type(LauncherType::Application);
 
     let response = proxy

@@ -1,5 +1,7 @@
 use anyhow::bail;
 use futures::future::join_all;
+use gdk_pixbuf::Pixbuf;
+use gtk::{gdk, gio, glib};
 use image::{codecs::png::PngEncoder, ImageEncoder, ImageFormat};
 use isahc::{config, prelude::*};
 use lazy_static::lazy_static;
@@ -122,6 +124,42 @@ impl Ord for Image {
     }
 }
 
+impl Image {
+    pub fn from_buffer(buffer: Vec<u8>, is_svg: bool) -> anyhow::Result<Self> {
+        if is_svg {
+            Ok(Image {
+                buffer, 
+                size: ImageSize::Variable
+            })
+        } else {
+            let format = image::guess_format(buffer.as_slice())?;
+            let image = image::load_from_memory_with_format(buffer.as_slice(), format)?;
+            if image.width() != image.height() {
+                bail!("Image is not square")
+            }
+            let buffer = if format != ImageFormat::Png {
+                let mut encbuf = Vec::new();
+                PngEncoder::new(&mut encbuf).write_image(
+                    image.as_bytes(),
+                    image.width(),
+                    image.height(),
+                    image::ExtendedColorType::Rgba8,
+                )?;
+                encbuf
+            } else {
+                buffer
+            };
+            Ok(Image {
+                buffer, 
+                size: ImageSize::Sized((image.width(), image.height()))
+            })
+        }
+    }
+    pub fn to_gdk_texture(&self, size: i32) -> gdk::Texture {
+        to_gdk_texture(&self.buffer, size)
+    }
+}
+
 lazy_static! {
     static ref icon_selector: Selector = Selector::parse(
         "link[rel='icon'], link[rel='shortcut icon'], link[rel^='apple-touch-icon']"
@@ -134,36 +172,25 @@ lazy_static! {
         .unwrap();
 }
 
+pub fn to_gdk_texture(buffer: &[u8], size: i32) -> gdk::Texture {
+    let bytes = glib::Bytes::from(buffer);
+    let stream = gio::MemoryInputStream::from_bytes(&bytes);
+    let pixbuf =
+        Pixbuf::from_stream_at_scale(&stream, size, size, true, gio::Cancellable::NONE)
+            .unwrap();
+    gdk::Texture::for_pixbuf(&pixbuf)
+}
+
+
 async fn get_image_metadata(url: Url) -> anyhow::Result<Image> {
     let mut response = http.get_async(url.to_string()).await?;
     let buffer = response.bytes().await?;
-    let (buffer, size) = if let Some(Some(Some(Some("svg")))) = url.path_segments().map(|x| {
-        x.last()
-            .map(|x| Path::new(x).extension().map(|x| x.to_str()))
-    }) {
-        (buffer, ImageSize::Variable)
-    } else {
-        let format = image::guess_format(buffer.as_slice())?;
-        let image = image::load_from_memory_with_format(buffer.as_slice(), format)?;
-        if image.width() != image.height() {
-            bail!("image is not square")
-        }
-        let buffer = if format != ImageFormat::Png {
-            let mut encbuf = Vec::new();
-            PngEncoder::new(&mut encbuf).write_image(
-                image.as_bytes(),
-                image.width(),
-                image.height(),
-                image::ExtendedColorType::Rgba8,
-            )?;
-            encbuf
-        } else {
-            buffer
-        };
-        (buffer, ImageSize::Sized((image.width(), image.height())))
-    };
+    let extension = url.path_segments()
+        .and_then(|x| x.last())
+        .and_then(|x| Path::new(x).extension())
+        .and_then(|x| x.to_str());
 
-    Ok(Image { buffer, size })
+    Image::from_buffer(buffer, extension.is_some_and(|x| x == "svg"))
 }
 
 pub async fn get_website_meta(url: Url) -> anyhow::Result<WebsiteMeta> {

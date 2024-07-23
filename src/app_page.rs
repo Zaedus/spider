@@ -8,6 +8,7 @@ use std::cell::RefCell;
 use ashpd::WindowIdentifier;
 
 use crate::apps::{self, AppDetails};
+use crate::util;
 
 #[inline]
 fn solid_color(r: u8, g: u8, b: u8) -> gdk::RGBA {
@@ -37,8 +38,6 @@ enum DiffSignificance {
 
 mod imp {
 
-    use std::borrow::Borrow;
-
     use super::*;
 
     #[derive(Default, Debug, gtk::CompositeTemplate)]
@@ -49,6 +48,8 @@ mod imp {
 
         // Better to wrap in an Option to avoid overwriting with empty data
         unsaved_details: RefCell<Option<AppDetails>>,
+
+        unsaved_icon: RefCell<Option<Vec<u8>>>,
 
         #[template_child]
         pub icon_image: TemplateChild<gtk::Image>,
@@ -107,8 +108,7 @@ mod imp {
     impl AppPage {
         #[template_callback]
         fn on_cancel_clicked(&self, _: gtk::Button) {
-            self.set_details(&self.details.borrow());
-            self.update_unsaved_details();
+            self.reset();
         }
         #[template_callback]
         fn update_unsaved_details_cb(&self, _: gtk::Widget) {
@@ -117,21 +117,36 @@ mod imp {
         #[template_callback]
         async fn on_save_clicked(&self, _: gtk::Button) {
             if let Err(err) = self.save_details().await {
-                self.notify(err.to_string());
+                self.toast(err.to_string());
+            }
+        }
+        #[template_callback]
+        async fn on_icon_clicked(&self, _: gtk::Button) {
+            if let Ok(file) = self.get_new_icon().await {
+                if let Err(err) = self.set_unsaved_icon(&file).await {
+                    self.toast(err.to_string())
+                }
             }
         }
     }
 
     impl AppPage {
-        fn notify(&self, message: String) {
+        fn toast(&self, message: String) {
             self.obj()
                 .activate_action("win.notify", Some(&message.to_variant()))
                 .unwrap();
         }
         fn setup_menu(&self) {
+            self.page_menu.remove_all();
+
             let details = self.details.borrow();
-            self.page_menu.append_item(&menu_item_and_target("Open Window", "app.open-app", &details.id));
-            self.page_menu.append_item(&menu_item_and_target("Delete", "win.delete", &details.id));
+            self.page_menu.append_item(&menu_item_and_target(
+                "Open Window",
+                "app.open-app",
+                &details.id,
+            ));
+            self.page_menu
+                .append_item(&menu_item_and_target("Delete", "win.delete", &details.id));
         }
         fn diff_significance(&self) -> DiffSignificance {
             let unsaved = self.unsaved_details.borrow().clone().unwrap();
@@ -166,6 +181,12 @@ mod imp {
             } else {
                 None
             };
+            let icon = self.unsaved_icon.borrow();
+            let icon = if icon.is_some() {
+                icon.clone()
+            } else {
+                details.icon.clone()
+            };
 
             let unsaved = AppDetails {
                 url: self.url_entry.text().to_string(),
@@ -174,6 +195,7 @@ mod imp {
                 light_bg,
                 dark_fg,
                 dark_bg,
+                icon,
                 ..details
             };
             self.unsaved_details.replace(Some(unsaved));
@@ -211,6 +233,12 @@ mod imp {
             self.update_unsaved_details();
             self.obj().activate_action("win.refresh", None)?;
             Ok(())
+        }
+        pub fn reset(&self) {
+            let details = self.details.borrow().clone();
+            self.set_details(&details);
+            self.unsaved_icon.replace(None);
+            self.update_unsaved_details();
         }
         pub fn set_details(&self, details: &AppDetails) {
             self.details.replace(details.clone());
@@ -276,6 +304,39 @@ mod imp {
                 .connect_notify_local(Some("rgba"), update_details(self));
             self.dfg_color
                 .connect_notify_local(Some("rgba"), update_details(self));
+        }
+        async fn get_new_icon(&self) -> anyhow::Result<gio::File> {
+            let filter = gtk::FileFilter::new();
+            filter.add_pixbuf_formats();
+
+            let filters = gio::ListStore::new::<gtk::FileFilter>();
+            filters.append(&filter);
+
+            let root = self.obj().root();
+            let file = gtk::FileDialog::builder()
+                .accept_label("Select")
+                .modal(true)
+                .title("App Icon")
+                .filters(&filters)
+                .build()
+                .open_future(root.and_downcast_ref::<gtk::Window>())
+                .await?;
+
+            Ok(file)
+        }
+        async fn set_unsaved_icon(&self, file: &gio::File) -> anyhow::Result<()> {
+            let (buffer, _etag) = file.load_contents_future().await?;
+            let extension = file.basename();
+            let extension = extension
+                .as_ref()
+                .and_then(|x| x.extension())
+                .and_then(|x| x.to_str());
+            let image =
+                util::Image::from_buffer(buffer.to_vec(), extension.is_some_and(|x| x == "svg"))?;
+            self.unsaved_icon.replace(Some(image.buffer.to_vec()));
+            self.icon_image.set_paintable(Some(&image.to_gdk_texture(32)));
+            self.update_unsaved_details();
+            Ok(())
         }
     }
 }
