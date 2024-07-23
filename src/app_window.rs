@@ -2,9 +2,9 @@ use adw::subclass::prelude::*;
 use glib::Object;
 use gtk::glib;
 use gtk::prelude::*;
+use std::cell::RefCell;
 use webkit::prelude::*;
 use webkit::WebView;
-use std::cell::RefCell;
 
 use crate::apps::get_app_details;
 
@@ -18,9 +18,9 @@ mod imp {
     pub struct AppWindow {
         #[template_child]
         pub toolbar: TemplateChild<adw::ToolbarView>,
-        
+
         #[property(get, set = Self::on_set_id)]
-        pub id: RefCell<String>
+        pub id: RefCell<String>,
     }
 
     #[glib::object_subclass]
@@ -55,27 +55,50 @@ mod imp {
 
             self.obj().set_title(Some(details.title.as_str()));
 
-            let webview = WebView::new();
-
-            let settings = webkit::Settings::new();
-            settings.set_enable_webgl(true);
-            settings.set_enable_webrtc(true);
-            settings.set_enable_media_capabilities(true);
-            settings.set_enable_encrypted_media(true);
-            webview.set_settings(&settings);
-
-            let session = webview.network_session().unwrap();
-
-            let cookie_mgr = session.cookie_manager().unwrap();
-            let mut cookie_file = glib::user_data_dir();
-            cookie_file.push(glib::application_name().unwrap());
-            cookie_file.push(id.as_str());
-            std::fs::create_dir_all(cookie_file.clone()).unwrap();
-            cookie_file.push("cookies");
-            cookie_mgr.set_persistent_storage(cookie_file.to_str().unwrap(), webkit::CookiePersistentStorage::Sqlite);
-
+            let webview = self.create_webview();
             webview.load_uri(&details.url);
+
             self.toolbar.set_content(Some(&webview));
+        }
+        fn create_webview(&self) -> webkit::WebView {
+            let id = self.id.borrow();
+
+            // Define and create base app directory where webkit cache, data, and cookies are stored
+            let app_data_dir = glib::user_data_dir()
+                .join(glib::application_name().unwrap())
+                .join(id.as_str());
+            let app_cache_dir = glib::user_cache_dir()
+                .join(glib::application_name().unwrap())
+                .join(id.as_str());
+            std::fs::create_dir_all(app_data_dir.clone()).unwrap();
+            std::fs::create_dir_all(app_cache_dir.clone()).unwrap();
+
+            // Build settings
+            let settings = webkit::Settings::builder()
+                .enable_webgl(true)
+                .enable_webrtc(true)
+                .enable_encrypted_media(true)
+                .enable_media_capabilities(true)
+                .build();
+            // Build network session
+            let network_session = webkit::NetworkSession::builder()
+                .cache_directory(app_cache_dir.to_str().unwrap())
+                .data_directory(app_data_dir.join("data").to_str().unwrap())
+                .build();
+
+            // Build cookie manager
+            let cookie_manager = network_session.cookie_manager().unwrap();
+
+            cookie_manager.set_persistent_storage(
+                app_data_dir.join("cookie").to_str().unwrap(),
+                webkit::CookiePersistentStorage::Sqlite,
+            );
+
+            // Build WebView
+            WebView::builder()
+                .network_session(&network_session)
+                .settings(&settings)
+                .build()
         }
     }
 }
@@ -88,8 +111,6 @@ glib::wrapper! {
 
 impl AppWindow {
     pub fn new(id: String) -> Self {
-        Object::builder()
-            .property("id", id)
-            .build()
+        Object::builder().property("id", id).build()
     }
 }
