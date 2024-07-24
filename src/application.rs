@@ -100,6 +100,16 @@ impl SpiderApplication {
                     )
                 })
                 .build(),
+            gio::ActionEntry::builder("close-app")
+                .parameter_type(Some(&String::static_variant_type()))
+                .activate(move |app: &Self, _, id| {
+                    app.close_app(
+                        id.expect("no id provided")
+                            .get::<String>()
+                            .expect("invalid id type provided"),
+                    )
+                })
+                .build(),
         ]);
     }
 
@@ -118,18 +128,33 @@ impl SpiderApplication {
         about.present();
     }
 
-    fn open_app(&self, id: String) {
+    fn find_app(&self, id: &str) -> Option<AppWindow> {
         for window in self.windows() {
             if let Ok(window) = window.downcast::<AppWindow>() {
                 if window.id() == id {
-                    window.present();
-                    return;
+                    return Some(window);
                 } 
             }
         }
-        let details = get_app_details(id);
-        let window = AppWindow::new(&details);
-        self.add_window(&window);
+        None
+    }
+
+    fn close_app(&self, id: String) {
+        if let Some(window) = self.find_app(&id) {
+            window.set_hide_on_close(false);
+            window.close();
+        }
+    }
+
+    fn open_app(&self, id: String) {
+        let window = if let Some(window) = self.find_app(&id) {
+            window
+        } else {
+            let details = get_app_details(id);
+            let window = AppWindow::new(&details);
+            self.add_window(&window);
+            window
+        };
         window.present();
     }
 }
