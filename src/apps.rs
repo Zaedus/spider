@@ -154,8 +154,12 @@ pub async fn uninstall_app(id: &str) -> anyhow::Result<()> {
     let app_cache_dir = glib::user_cache_dir()
         .join(glib::application_name().unwrap())
         .join(id);
-    std::fs::remove_dir_all(app_data_dir)?;
-    std::fs::remove_dir_all(app_cache_dir)?;
+    if app_data_dir.exists() {
+        std::fs::remove_dir_all(app_data_dir)?;
+    }
+    if app_cache_dir.exists() {
+        std::fs::remove_dir_all(app_cache_dir)?;
+    }
     delete_app_details(id)?;
 
     Ok(())
