@@ -3,6 +3,7 @@ use adw::subclass::prelude::*;
 use gtk::{gio, glib};
 
 use crate::app_window::AppWindow;
+use crate::apps::get_app_details;
 use crate::config;
 use crate::SpiderWindow;
 
@@ -54,10 +55,7 @@ mod imp {
 
         fn command_line(&self, command_line: &gio::ApplicationCommandLine) -> glib::ExitCode {
             if let Some(id) = command_line.arguments().get(1) {
-                let id: String = id.to_str().unwrap().into();
-                let window = AppWindow::new(id);
-                self.obj().add_window(&window);
-                window.present();
+                self.obj().open_app(id.to_string_lossy().to_string());
                 glib::ExitCode::SUCCESS
             } else {
                 self.activate();
@@ -129,7 +127,8 @@ impl SpiderApplication {
                 } 
             }
         }
-        let window = AppWindow::new(id);
+        let details = get_app_details(id);
+        let window = AppWindow::new(&details);
         self.add_window(&window);
         window.present();
     }

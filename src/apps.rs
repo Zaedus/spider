@@ -51,10 +51,24 @@ impl AppDetails {
         }
     }
     pub fn to_hashmap(&self) -> HashMap<String, String> {
-        HashMap::from([
-            ("url".into(), self.url.clone()),
-            ("title".into(), self.title.clone()),
-        ])
+        let mut kv_pairs = vec![
+            ("url".to_string(), self.url.clone()),
+            ("title".to_string(), self.title.clone()),
+        ];
+        if let Some(v) = &self.dark_fg {
+            kv_pairs.push(("darkfg".into(), v.clone()));
+        }
+        if let Some(v) = &self.dark_bg {
+            kv_pairs.push(("darkbg".into(), v.clone()));
+        }
+        if let Some(v) = &self.light_fg {
+            kv_pairs.push(("lightfg".into(), v.clone()));
+        }
+        if let Some(v) = &self.light_bg {
+            kv_pairs.push(("lightbg".into(), v.clone()));
+        }
+
+        kv_pairs.into_iter().collect()
     }
     pub fn with_icon(self, icon: Vec<u8>) -> Self {
         AppDetails {

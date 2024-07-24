@@ -274,7 +274,7 @@ mod imp {
             );
             self.lfg_color.set_rgba(
                 &details
-                    .light_bg
+                    .light_fg
                     .as_ref()
                     .and_then(|x| gdk::RGBA::parse(x).ok())
                     .unwrap_or(solid_color(50, 50, 50)),
