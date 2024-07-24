@@ -148,6 +148,14 @@ pub async fn uninstall_app(id: &str) -> anyhow::Result<()> {
     let proxy = DynamicLauncherProxy::new().await?;
 
     proxy.uninstall(&id_to_desktop(id)).await?;
+    let app_data_dir = glib::user_data_dir()
+        .join(glib::application_name().unwrap())
+        .join(id);
+    let app_cache_dir = glib::user_cache_dir()
+        .join(glib::application_name().unwrap())
+        .join(id);
+    std::fs::remove_dir_all(app_data_dir)?;
+    std::fs::remove_dir_all(app_cache_dir)?;
     delete_app_details(id)?;
 
     Ok(())
