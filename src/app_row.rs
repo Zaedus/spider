@@ -57,7 +57,7 @@ mod imp {
                 id,
                 async move {
                     let icon = get_app_icon(id.as_str()).await.unwrap();
-                    let details = get_app_details(id).with_icon(icon);
+                    let details = get_app_details(id.as_str()).unwrap().with_icon(icon);
                     _self
                         .details
                         .set(details.clone())

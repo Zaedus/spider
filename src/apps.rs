@@ -135,12 +135,12 @@ pub async fn get_app_icon(id: &str) -> anyhow::Result<Vec<u8>> {
     Ok(icon)
 }
 
-pub fn get_app_details(id: String) -> AppDetails {
+pub fn get_app_details(id: &str) -> Option<AppDetails> {
     let settings = settings();
     let settings = settings.get::<AppsSettings>("apps-settings");
-    let settings = settings.get(&id).unwrap();
-    AppDetails {
-        id,
+    let settings = settings.get(id)?;
+    Some(AppDetails {
+        id: id.to_string(),
         url: settings.get("url").unwrap().to_string(),
         title: settings.get("title").unwrap().to_string(),
         dark_fg: settings.get("darkfg").map(|x| x.to_string()),
@@ -148,7 +148,7 @@ pub fn get_app_details(id: String) -> AppDetails {
         light_fg: settings.get("lightfg").map(|x| x.to_string()),
         light_bg: settings.get("lightbg").map(|x| x.to_string()),
         icon: None,
-    }
+    })
 }
 
 pub async fn uninstall_app(id: &str) -> anyhow::Result<()> {

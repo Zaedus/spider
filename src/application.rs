@@ -1,5 +1,6 @@
 use adw::prelude::*;
 use adw::subclass::prelude::*;
+use anyhow::anyhow;
 use gtk::{gio, glib};
 
 use crate::app_window::AppWindow;
@@ -36,35 +37,26 @@ mod imp {
     }
 
     impl ApplicationImpl for SpiderApplication {
-        // We connect to the activate callback to create a window when the application
-        // has been launched. Additionally, this callback notifies us when the user
-        // tries to launch a "second instance" of the application. When they try
-        // to do that, we'll just present any existing window.
-        fn activate(&self) {
-            // Clean dirs
+        fn command_line(&self, command_line: &gio::ApplicationCommandLine) -> glib::ExitCode {
+            let application = self.obj();
+
+            // Clean up
             clean_app_dirs().unwrap();
 
-            let application = self.obj();
-            // Get the current window or create one if necessary
-            let window = if let Some(window) = application.active_window() {
+            // Get or create window to present
+            let window = if let Some(id) = command_line.arguments().get(1) {
+                self.obj()
+                    .create_app(id.to_string_lossy().to_string())
+                    .unwrap()
+                    .upcast()
+            } else if let Some(window) = application.active_window() {
                 window
             } else {
-                let window = SpiderWindow::new(&*application);
-                window.upcast()
+                SpiderWindow::new(&*application).upcast()
             };
-
-            // Ask the window manager/compositor to present the window
             window.present();
-        }
 
-        fn command_line(&self, command_line: &gio::ApplicationCommandLine) -> glib::ExitCode {
-            if let Some(id) = command_line.arguments().get(1) {
-                self.obj().open_app(id.to_string_lossy().to_string());
-                glib::ExitCode::SUCCESS
-            } else {
-                self.activate();
-                glib::ExitCode::SUCCESS
-            }
+            glib::ExitCode::SUCCESS
         }
     }
 
@@ -97,11 +89,13 @@ impl SpiderApplication {
             gio::ActionEntry::builder("open-app")
                 .parameter_type(Some(&String::static_variant_type()))
                 .activate(move |app: &Self, _, id| {
-                    app.open_app(
+                    app.create_app(
                         id.expect("no id provided")
                             .get::<String>()
                             .expect("invalid id type provided"),
                     )
+                    .unwrap()
+                    .present()
                 })
                 .build(),
             gio::ActionEntry::builder("close-app")
@@ -150,15 +144,14 @@ impl SpiderApplication {
         }
     }
 
-    fn open_app(&self, id: String) {
-        let window = if let Some(window) = self.find_app(&id) {
-            window
+    fn create_app(&self, id: String) -> anyhow::Result<AppWindow> {
+        if let Some(window) = self.find_app(&id) {
+            Ok(window)
         } else {
-            let details = get_app_details(id);
+            let details = get_app_details(id.as_str()).ok_or(anyhow!("No app with id {}", id))?;
             let window = AppWindow::new(&details);
             self.add_window(&window);
-            window
-        };
-        window.present();
+            Ok(window)
+        }
     }
 }
