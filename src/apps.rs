@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 
 use ashpd::{
     desktop::{
@@ -7,14 +10,18 @@ use ashpd::{
     },
     WindowIdentifier,
 };
-use gdk_pixbuf::Pixbuf;
-use gio::MemoryInputStream;
 use gtk::prelude::SettingsExtManual;
-use gtk::{gdk, gio, glib};
+use gtk::{gdk, glib};
+use lazy_static::lazy_static;
 
-use crate::{application::settings, config, util::{to_gdk_texture, Image}};
+use crate::{application::settings, config, util::to_gdk_texture};
 
 type AppsSettings = HashMap<String, HashMap<String, String>>;
+
+lazy_static! {
+    static ref data_dir: PathBuf = glib::user_data_dir().join(glib::application_name().unwrap());
+    static ref cache_dir: PathBuf = glib::user_cache_dir().join(glib::application_name().unwrap());
+}
 
 #[derive(Default, Debug, Clone)]
 pub struct AppDetails {
@@ -148,12 +155,8 @@ pub async fn uninstall_app(id: &str) -> anyhow::Result<()> {
     let proxy = DynamicLauncherProxy::new().await?;
 
     proxy.uninstall(&id_to_desktop(id)).await?;
-    let app_data_dir = glib::user_data_dir()
-        .join(glib::application_name().unwrap())
-        .join(id);
-    let app_cache_dir = glib::user_cache_dir()
-        .join(glib::application_name().unwrap())
-        .join(id);
+    let app_data_dir = data_dir.join(id);
+    let app_cache_dir = cache_dir.join(id);
     if app_data_dir.exists() {
         std::fs::remove_dir_all(app_data_dir)?;
     }
@@ -203,5 +206,30 @@ Exec=env spider {}"#,
 
     save_app_details(details)?;
 
+    Ok(())
+}
+
+/// Removes all instances of app folders whos IDs no longer exist
+/// THIS IS A HALF SOLUTION AND PATCH ON A PROBLEM
+/// The patch: Currently, webkit still holds access to some files even a bit after
+/// the window has been closed which causes many problems with fully purging
+/// these directories during or shortly after running.
+/// The half solution: It is good to ensure that there aren't hidden artifiacts of
+/// "deleted" web apps which could contain tokens.
+pub fn clean_app_dirs() -> anyhow::Result<()> {
+    let settings = settings();
+    let app_ids: HashSet<String> = settings.get::<Vec<String>>("app-ids").into_iter().collect();
+    for folder in [data_dir.to_path_buf(), cache_dir.to_path_buf()] {
+        if !folder.exists() {
+            continue;
+        }
+        for item in std::fs::read_dir(folder).unwrap().flatten() {
+            if item.file_type().unwrap().is_dir()
+                && !app_ids.contains(&item.file_name().to_string_lossy().to_string())
+            {
+                std::fs::remove_dir_all(item.path()).unwrap();
+            }
+        }
+    }
     Ok(())
 }

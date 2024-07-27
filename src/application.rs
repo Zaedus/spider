@@ -3,6 +3,7 @@ use adw::subclass::prelude::*;
 use gtk::{gio, glib};
 
 use crate::app_window::AppWindow;
+use crate::apps::clean_app_dirs;
 use crate::apps::get_app_details;
 use crate::config;
 use crate::SpiderWindow;
@@ -12,6 +13,7 @@ pub fn settings() -> gio::Settings {
 }
 
 mod imp {
+
 
     use super::*;
 
@@ -40,6 +42,9 @@ mod imp {
         // tries to launch a "second instance" of the application. When they try
         // to do that, we'll just present any existing window.
         fn activate(&self) {
+            // Clean dirs
+            clean_app_dirs().unwrap();
+
             let application = self.obj();
             // Get the current window or create one if necessary
             let window = if let Some(window) = application.active_window() {
