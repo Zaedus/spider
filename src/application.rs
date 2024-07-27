@@ -14,7 +14,6 @@ pub fn settings() -> gio::Settings {
 
 mod imp {
 
-
     use super::*;
 
     #[derive(Debug, Default)]
@@ -138,7 +137,7 @@ impl SpiderApplication {
             if let Ok(window) = window.downcast::<AppWindow>() {
                 if window.id() == id {
                     return Some(window);
-                } 
+                }
             }
         }
         None

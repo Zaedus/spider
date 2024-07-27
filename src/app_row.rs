@@ -2,7 +2,7 @@ use adw::prelude::*;
 use adw::subclass::prelude::*;
 use glib::clone;
 use glib::Object;
-use gtk::{gio, glib};
+use gtk::glib;
 use std::cell::{OnceCell, RefCell};
 
 use crate::apps::{get_app_details, get_app_icon, AppDetails};
@@ -58,7 +58,10 @@ mod imp {
                 async move {
                     let icon = get_app_icon(id.as_str()).await.unwrap();
                     let details = get_app_details(id).with_icon(icon);
-                    _self.details.set(details.clone()).expect("attempted to set id more than once");
+                    _self
+                        .details
+                        .set(details.clone())
+                        .expect("attempted to set id more than once");
 
                     _self.title.set_label(&details.title);
                     _self.subtitle.set_label(&details.url);

@@ -2,7 +2,6 @@ use adw::prelude::*;
 use adw::subclass::prelude::*;
 use glib::{clone, Object};
 use gtk::glib;
-use std::borrow::Borrow;
 use std::cell::RefCell;
 use webkit::prelude::*;
 use webkit::WebView;
@@ -81,10 +80,12 @@ mod imp {
             self.toolbar.set_content(Some(&webview));
         }
         fn try_load_colors(&self, fg: &Option<String>, bg: &Option<String>) {
+            #[allow(deprecated)]
             let style_context = self.obj().style_context();
 
             // Remove old provider
             if let Some(provider) = self.provider.borrow().as_ref() {
+                #[allow(deprecated)]
                 style_context.remove_provider(provider);
             }
 
@@ -93,6 +94,7 @@ mod imp {
                 if let Some(ref bg) = bg {
                     let provider = gtk::CssProvider::new();
                     provider.load_from_string(format_css(fg, bg).as_str());
+                    #[allow(deprecated)]
                     style_context.add_provider(&provider, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
                     self.provider.replace(Some(provider));
                 }

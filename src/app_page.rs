@@ -333,7 +333,8 @@ mod imp {
             let image =
                 util::Image::from_buffer(buffer.to_vec(), extension.is_some_and(|x| x == "svg"))?;
             self.unsaved_icon.replace(Some(image.buffer.to_vec()));
-            self.icon_image.set_paintable(Some(&image.to_gdk_texture(32)));
+            self.icon_image
+                .set_paintable(Some(&image.to_gdk_texture(32)));
             self.update_unsaved_details();
             Ok(())
         }
