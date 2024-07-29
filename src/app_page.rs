@@ -2,23 +2,13 @@ use adw::prelude::*;
 use adw::subclass::prelude::*;
 use glib::clone;
 use glib::Object;
-use gtk::{gdk, gio, glib};
+use gtk::{gio, glib};
 use std::cell::RefCell;
 
 use ashpd::WindowIdentifier;
 
 use crate::apps::{self, AppDetails};
 use crate::util;
-
-#[inline]
-fn solid_color(r: u8, g: u8, b: u8) -> gdk::RGBA {
-    gdk::RGBA::new(
-        (r as f32) / 255.0,
-        (g as f32) / 255.0,
-        (b as f32) / 255.0,
-        1.0,
-    )
-}
 
 fn menu_item_and_target(label: &str, action_name: &str, action_target: &str) -> gio::MenuItem {
     let item = gio::MenuItem::new(Some(label), None);
@@ -58,18 +48,6 @@ mod imp {
         #[template_child]
         pub title_entry: TemplateChild<adw::EntryRow>,
         #[template_child]
-        pub lbg_color: TemplateChild<gtk::ColorDialogButton>,
-        #[template_child]
-        pub lfg_color: TemplateChild<gtk::ColorDialogButton>,
-        #[template_child]
-        pub dbg_color: TemplateChild<gtk::ColorDialogButton>,
-        #[template_child]
-        pub dfg_color: TemplateChild<gtk::ColorDialogButton>,
-        #[template_child]
-        pub light_colors: TemplateChild<adw::ExpanderRow>,
-        #[template_child]
-        pub dark_colors: TemplateChild<adw::ExpanderRow>,
-        #[template_child]
         pub headerbar_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub normal_headerbar: TemplateChild<adw::HeaderBar>,
@@ -77,6 +55,8 @@ mod imp {
         pub edit_headerbar: TemplateChild<adw::HeaderBar>,
         #[template_child]
         pub page_menu: TemplateChild<gio::Menu>,
+        #[template_child]
+        pub titlebar_color: TemplateChild<adw::SwitchRow>,
     }
 
     #[glib::object_subclass]
@@ -161,26 +141,6 @@ mod imp {
         }
         fn update_unsaved_details(&self) {
             let details = self.details.borrow().clone();
-            let light_fg = if self.light_colors.enables_expansion() {
-                Some(self.lfg_color.rgba().to_string())
-            } else {
-                None
-            };
-            let light_bg = if self.light_colors.enables_expansion() {
-                Some(self.lbg_color.rgba().to_string())
-            } else {
-                None
-            };
-            let dark_fg = if self.dark_colors.enables_expansion() {
-                Some(self.dfg_color.rgba().to_string())
-            } else {
-                None
-            };
-            let dark_bg = if self.dark_colors.enables_expansion() {
-                Some(self.dbg_color.rgba().to_string())
-            } else {
-                None
-            };
             let icon = self.unsaved_icon.borrow();
             let icon = if icon.is_some() {
                 icon.clone()
@@ -191,10 +151,7 @@ mod imp {
             let unsaved = AppDetails {
                 url: self.url_entry.text().to_string(),
                 title: self.title_entry.text().to_string(),
-                light_fg,
-                light_bg,
-                dark_fg,
-                dark_bg,
+                has_titlebar_color: self.titlebar_color.is_active(),
                 icon,
                 ..details
             };
@@ -245,64 +202,9 @@ mod imp {
                 .set_paintable(Some(&details.to_gdk_texture(256)));
             self.title_entry.set_text(details.title.as_str());
             self.url_entry.set_text(details.url.as_str());
+            self.titlebar_color.set_active(details.has_titlebar_color);
 
-            self.light_colors
-                .set_enable_expansion(details.light_bg.is_some() || details.light_fg.is_some());
-            self.dark_colors
-                .set_enable_expansion(details.dark_bg.is_some() || details.dark_fg.is_some());
-
-            self.dbg_color.set_rgba(
-                &details
-                    .dark_bg
-                    .as_ref()
-                    .and_then(|x| gdk::RGBA::parse(x).ok())
-                    .unwrap_or(solid_color(36, 36, 36)),
-            );
-            self.dfg_color.set_rgba(
-                &details
-                    .dark_fg
-                    .as_ref()
-                    .and_then(|x| gdk::RGBA::parse(x).ok())
-                    .unwrap_or(solid_color(255, 255, 255)),
-            );
-            self.lbg_color.set_rgba(
-                &details
-                    .light_bg
-                    .as_ref()
-                    .and_then(|x| gdk::RGBA::parse(x).ok())
-                    .unwrap_or(solid_color(250, 250, 250)),
-            );
-            self.lfg_color.set_rgba(
-                &details
-                    .light_fg
-                    .as_ref()
-                    .and_then(|x| gdk::RGBA::parse(x).ok())
-                    .unwrap_or(solid_color(50, 50, 50)),
-            );
             self.setup_menu();
-        }
-        fn setup_signals(&self) {
-            fn update_details<T>(_self: &AppPage) -> impl Fn(&T, &glib::ParamSpec) {
-                clone!(
-                    #[weak(rename_to=_self)]
-                    _self,
-                    move |_: &T, _: &glib::ParamSpec| {
-                        _self.update_unsaved_details();
-                    }
-                )
-            }
-            self.light_colors
-                .connect_notify_local(Some("enable-expansion"), update_details(self));
-            self.dark_colors
-                .connect_notify_local(Some("enable-expansion"), update_details(self));
-            self.lbg_color
-                .connect_notify_local(Some("rgba"), update_details(self));
-            self.lfg_color
-                .connect_notify_local(Some("rgba"), update_details(self));
-            self.dbg_color
-                .connect_notify_local(Some("rgba"), update_details(self));
-            self.dfg_color
-                .connect_notify_local(Some("rgba"), update_details(self));
         }
         async fn get_new_icon(&self) -> anyhow::Result<gio::File> {
             let filter = gtk::FileFilter::new();
@@ -337,6 +239,15 @@ mod imp {
                 .set_paintable(Some(&image.to_gdk_texture(32)));
             self.update_unsaved_details();
             Ok(())
+        }
+        fn setup_signals(&self) {
+            self.titlebar_color.connect_active_notify(clone!(
+                #[weak(rename_to=_self)]
+                self,
+                move |_| {
+                    _self.update_unsaved_details();
+                }
+            ));
         }
     }
 }

@@ -23,16 +23,13 @@ lazy_static! {
     static ref cache_dir: PathBuf = glib::user_cache_dir().join(glib::application_name().unwrap());
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct AppDetails {
     pub id: String,
     pub url: String,
     pub title: String,
     pub icon: Option<Vec<u8>>,
-    pub dark_fg: Option<String>,
-    pub dark_bg: Option<String>,
-    pub light_fg: Option<String>,
-    pub light_bg: Option<String>,
+    pub has_titlebar_color: bool,
 }
 
 impl PartialEq for AppDetails {
@@ -41,10 +38,19 @@ impl PartialEq for AppDetails {
             && self.url == other.url
             && self.title == other.title
             && self.icon == other.icon
-            && self.dark_fg == other.dark_fg
-            && self.dark_bg == other.dark_bg
-            && self.light_fg == other.light_fg
-            && self.light_bg == other.light_bg
+            && self.has_titlebar_color == other.has_titlebar_color
+    }
+}
+
+impl Default for AppDetails {
+    fn default() -> Self {
+        Self {
+            id: "".into(),
+            url: "".into(),
+            title: "".into(),
+            has_titlebar_color: true,
+            icon: None,
+        }
     }
 }
 
@@ -58,22 +64,14 @@ impl AppDetails {
         }
     }
     pub fn to_hashmap(&self) -> HashMap<String, String> {
-        let mut kv_pairs = vec![
+        let kv_pairs = vec![
             ("url".to_string(), self.url.clone()),
             ("title".to_string(), self.title.clone()),
+            (
+                "hastitlebarcolor".to_string(),
+                self.has_titlebar_color.to_string(),
+            ),
         ];
-        if let Some(v) = &self.dark_fg {
-            kv_pairs.push(("darkfg".into(), v.clone()));
-        }
-        if let Some(v) = &self.dark_bg {
-            kv_pairs.push(("darkbg".into(), v.clone()));
-        }
-        if let Some(v) = &self.light_fg {
-            kv_pairs.push(("lightfg".into(), v.clone()));
-        }
-        if let Some(v) = &self.light_bg {
-            kv_pairs.push(("lightbg".into(), v.clone()));
-        }
 
         kv_pairs.into_iter().collect()
     }
@@ -143,10 +141,9 @@ pub fn get_app_details(id: &str) -> Option<AppDetails> {
         id: id.to_string(),
         url: settings.get("url").unwrap().to_string(),
         title: settings.get("title").unwrap().to_string(),
-        dark_fg: settings.get("darkfg").map(|x| x.to_string()),
-        dark_bg: settings.get("darkbg").map(|x| x.to_string()),
-        light_fg: settings.get("lightfg").map(|x| x.to_string()),
-        light_bg: settings.get("lightbg").map(|x| x.to_string()),
+        has_titlebar_color: !settings
+            .get("hastitlebarcolor")
+            .is_some_and(|x| x == "false"),
         icon: None,
     })
 }

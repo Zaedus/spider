@@ -83,65 +83,13 @@ template $AppPage: Adw.NavigationPage {
           }
 
           Adw.PreferencesGroup {
-            title: "Custom Colors";
-            description: "Set custom header bar colors that better match your web app for both dark and light themes";
-
-            Adw.ExpanderRow light_colors {
-              title: "Light Theme Colors";
-              show-enable-switch: true;
-
-              Adw.ActionRow {
-                title: "Background Color";
-
-                ColorDialogButton lbg_color {
-                  valign: center;
-
-                  dialog: ColorDialog {
-                    title: "Light Theme Background Color";
-                  };
-                }
-              }
-
-              Adw.ActionRow {
-                title: "Foreground Color";
-
-                ColorDialogButton lfg_color {
-                  valign: center;
-
-                  dialog: ColorDialog {
-                    title: "Light Theme Foreground Color";
-                  };
-                }
-              }
-            }
-
-            Adw.ExpanderRow dark_colors {
-              title: "Dark Theme Colors";
-              show-enable-switch: true;
-
-              Adw.ActionRow {
-                title: "Background Color";
-
-                ColorDialogButton dbg_color {
-                  valign: center;
-
-                  dialog: ColorDialog {
-                    title: "Dark Theme Background Color";
-                  };
-                }
-              }
-
-              Adw.ActionRow {
-                title: "Foreground Color";
-
-                ColorDialogButton dfg_color {
-                  valign: center;
-
-                  dialog: ColorDialog {
-                    title: "Dark Theme Foreground Color";
-                  };
-                }
-              }
+            title: "User Interface";
+            description: "Customize the user interface of the window";
+            
+            Adw.SwitchRow titlebar_color {
+              title: "Titlebar Color";
+              subtitle: "Toggles the usage of the page's theme color in the titlebar";
+              activated => $update_unsaved_details_cb() swapped;
             }
           }
         }

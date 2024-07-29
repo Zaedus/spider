@@ -5,7 +5,7 @@ Install and integrate web apps into the GNOME desktop!
 ## Features ✨
 
 - [x] **Sandboxed**: Each app has an entirely separate instance of the WebKit browser
-- [x] **Per-app Window Styling**: Each app can have custom colors for both dark and light themes
+- [x] **Adaptive Window Styling**: Each app's titlebar adapts to it's [theme color](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta/name/theme-color)
 - [x] **High quality favicons**: Scrapes websites for a high quality favicon to use
 
 ## Planned ✔️

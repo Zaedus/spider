@@ -1,22 +1,18 @@
 use adw::prelude::*;
 use adw::subclass::prelude::*;
 use glib::{clone, Object};
-use gtk::glib;
+use gtk::{gdk, glib};
 use std::cell::RefCell;
 use webkit::prelude::*;
 use webkit::WebView;
 
 use crate::apps::AppDetails;
 
-fn format_css(fg: &str, bg: &str) -> String {
+fn format_css(id: &str, bg: &str) -> String {
     let css = format!(
-        r#"
-window {{
-    color: {};
-    background: {};
-}}
-"#,
-        fg, bg
+        r#"window#s{id} {{
+    background: {bg};
+}}"#
     );
     css
 }
@@ -32,6 +28,7 @@ mod imp {
         pub toolbar: TemplateChild<adw::ToolbarView>,
 
         pub details: RefCell<AppDetails>,
+        pub webview: RefCell<webkit::WebView>,
         pub provider: RefCell<Option<gtk::CssProvider>>,
     }
 
@@ -49,18 +46,7 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for AppWindow {
-        fn constructed(&self) {
-            self.parent_constructed();
-
-            let settings = gtk::Settings::default().unwrap();
-            settings.connect_gtk_application_prefer_dark_theme_notify(clone!(
-                #[weak(rename_to=_self)]
-                self,
-                move |_| _self.load_style()
-            ));
-        }
-    }
+    impl ObjectImpl for AppWindow {}
     impl WidgetImpl for AppWindow {}
     impl WindowImpl for AppWindow {}
     impl ApplicationWindowImpl for AppWindow {}
@@ -71,43 +57,41 @@ mod imp {
             self.details.replace(details.clone());
 
             // Configure window
-            self.load_style();
+            self.obj()
+                .set_widget_name(format!("s{}", details.id).as_str());
             self.obj().set_title(Some(details.title.as_str()));
 
             // Set up the WebView
             let webview = self.create_webview();
             webview.load_uri(&details.url);
             self.toolbar.set_content(Some(&webview));
+            self.webview.replace(webview);
+
+            self.load_colors(None);
         }
-        fn try_load_colors(&self, fg: &Option<String>, bg: &Option<String>) {
-            #[allow(deprecated)]
-            let style_context = self.obj().style_context();
 
-            // Remove old provider
-            if let Some(provider) = self.provider.borrow().as_ref() {
-                #[allow(deprecated)]
-                style_context.remove_provider(provider);
+        fn load_colors(&self, bg: Option<&str>) {
+            if self.provider.borrow().is_none() {
+                let display = gdk::Display::default().unwrap();
+                let provider = gtk::CssProvider::new();
+
+                gtk::style_context_add_provider_for_display(
+                    &display,
+                    &provider,
+                    gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+                );
+                self.provider.replace(Some(provider));
             }
-
             // Add new one if possible
-            if let Some(ref fg) = fg {
-                if let Some(ref bg) = bg {
-                    let provider = gtk::CssProvider::new();
-                    provider.load_from_string(format_css(fg, bg).as_str());
-                    #[allow(deprecated)]
-                    style_context.add_provider(&provider, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
-                    self.provider.replace(Some(provider));
-                }
-            }
-        }
-        fn load_style(&self) {
-            let details = self.details.borrow();
-            let settings = gtk::Settings::default().unwrap();
-            if settings.is_gtk_application_prefer_dark_theme() {
-                self.try_load_colors(&details.dark_fg, &details.dark_bg);
-            } else {
-                self.try_load_colors(&details.light_fg, &details.light_bg);
-            }
+            let provider = self.provider.borrow();
+            let provider = provider.as_ref().unwrap();
+            provider.load_from_string(
+                format_css(
+                    self.details.borrow().id.as_str(),
+                    bg.unwrap_or("@window_bg_color"),
+                )
+                .as_str(),
+            );
         }
         fn create_webview(&self) -> webkit::WebView {
             let details = self.details.borrow();
@@ -129,7 +113,9 @@ mod imp {
                 .enable_webrtc(true)
                 .enable_encrypted_media(true)
                 .enable_media_capabilities(true)
+                .enable_developer_extras(true)
                 .build();
+
             // Build network session
             let network_session = webkit::NetworkSession::builder()
                 .cache_directory(app_cache_dir.to_str().unwrap())
@@ -144,10 +130,40 @@ mod imp {
                 webkit::CookiePersistentStorage::Sqlite,
             );
 
+            // Build content manager
+            let content_manager = webkit::UserContentManager::new();
+            if details.has_titlebar_color {
+                let script = webkit::UserScript::new(
+                    include_str!("./inject.js"),
+                    webkit::UserContentInjectedFrames::TopFrame,
+                    webkit::UserScriptInjectionTime::End,
+                    &[],
+                    &[],
+                );
+                content_manager.register_script_message_handler("themeColor", None);
+                content_manager.connect_script_message_received(
+                    Some("themeColor"),
+                    clone!(
+                        #[weak(rename_to=_self)]
+                        self,
+                        move |_, value| {
+                            let value = value.to_str();
+                            if value != "null" {
+                                _self.load_colors(Some(value.as_str()));
+                            } else {
+                                _self.load_colors(None)
+                            }
+                        }
+                    ),
+                );
+                content_manager.add_script(&script);
+            }
+
             // Build WebView
             WebView::builder()
                 .network_session(&network_session)
                 .settings(&settings)
+                .user_content_manager(&content_manager)
                 .build()
         }
     }
