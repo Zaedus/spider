@@ -115,7 +115,7 @@ impl SpiderApplication {
         let window = self.active_window().unwrap();
         let about = adw::AboutWindow::builder()
             .transient_for(&window)
-            .application_name("spider")
+            .application_name("Spider")
             .application_icon(config::APP_ID)
             .developer_name("Zaedus")
             .version(config::VERSION)
