@@ -8,6 +8,8 @@
     <name>Zaedus</name>
     <url>https://github.com/Zaedus</url>
   </developer>
+  <icon type="stock">io.github.spider.zaedus</icon>
+  <icon type="remote">https://raw.githubusercontent.com/Zaedus/spider/master/data/icons/hicolor/scalable/apps/io.github.zaedus.spider.svg</icon>
   
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-3.0-only</project_license>
