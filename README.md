@@ -10,6 +10,7 @@ Install and integrate web apps into the GNOME desktop!
 
 ## Planned ✔️
 
+- [ ] Get website data via webview
 - [ ] Option to autostart and run apps in background
 - [ ] Domain restriction
 - [ ] More keybinds in web app
