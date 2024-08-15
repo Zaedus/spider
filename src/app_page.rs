@@ -31,7 +31,7 @@ mod imp {
     use super::*;
 
     #[derive(Default, Debug, gtk::CompositeTemplate)]
-    #[template(resource = "/xyz/zaedus/spider/app_page.ui")]
+    #[template(resource = "/io/github/zaedus/spider/app_page.ui")]
     pub struct AppPage {
         // TODO: Make this a GObject property somehow
         details: RefCell<AppDetails>,

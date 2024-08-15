@@ -46,14 +46,23 @@ run_command(
 cargo_bin  = find_program('cargo')
 cargo_opt  = [ '--manifest-path', meson.project_source_root() / 'Cargo.toml' ]
 cargo_opt += [ '--target-dir', meson.project_build_root()  / 'src' ]
-cargo_env  = [ 'CARGO_HOME=' + meson.project_build_root()  / 'cargo-home' ]
+cargo_env  = []
 
-if get_option('buildtype') == 'release'
+if get_option('flatpak')
+  cargo_opt += [ '--offline' ]
+  buildtype  = 'release'
+else
+  cargo_env += [ 'CARGO_HOME=' + meson.project_build_root()  / 'cargo-home' ]
+  buildtype  = get_option('buildtype')
+endif
+
+if buildtype == 'release'
   cargo_opt += [ '--release' ]
   rust_target = 'release'
 else
   rust_target = 'debug'
 endif
+
 
 cargo_build = custom_target(
   'cargo-build',

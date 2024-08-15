@@ -209,7 +209,6 @@ pub async fn get_website_meta(url: Url) -> anyhow::Result<WebsiteMeta> {
         .into_iter()
         .filter_map(|path| url.join(path).ok())
         .collect::<HashSet<Url>>();
-    println!("{:?}", paths);
     let metadata = join_all(paths.into_iter().map(get_image_metadata)).await;
     let best_image = metadata
         .iter()

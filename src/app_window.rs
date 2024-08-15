@@ -22,7 +22,7 @@ mod imp {
     use super::*;
 
     #[derive(Default, Debug, gtk::CompositeTemplate)]
-    #[template(resource = "/xyz/zaedus/spider/app_window.ui")]
+    #[template(resource = "/io/github/zaedus/spider/app_window.ui")]
     pub struct AppWindow {
         #[template_child]
         pub toolbar: TemplateChild<adw::ToolbarView>,

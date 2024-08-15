@@ -12,7 +12,7 @@ mod imp {
     use super::*;
 
     #[derive(Default, Debug, gtk::CompositeTemplate, glib::Properties)]
-    #[template(resource = "/xyz/zaedus/spider/app_row.ui")]
+    #[template(resource = "/io/github/zaedus/spider/app_row.ui")]
     #[properties(wrapper_type = super::AppRow)]
     pub struct AppRow {
         #[template_child]

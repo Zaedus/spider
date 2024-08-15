@@ -1,4 +1,4 @@
-application_id = 'xyz.zaedus.spider'
+application_id = 'io.github.zaedus.spider'
 
 scalable_dir = 'hicolor' / 'scalable' / 'apps'
 install_data(

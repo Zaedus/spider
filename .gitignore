@@ -1,3 +1,4 @@
 /subprojects/blueprint-compiler
 /target
 /src/config.rs
+/.flatpak-builder

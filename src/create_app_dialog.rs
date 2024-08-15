@@ -17,7 +17,7 @@ mod imp {
     use super::*;
 
     #[derive(Default, Debug, gtk::CompositeTemplate)]
-    #[template(resource = "/xyz/zaedus/spider/create_app_dialog.ui")]
+    #[template(resource = "/io/github/zaedus/spider/create_app_dialog.ui")]
     pub struct CreateAppDialog {
         #[template_child]
         pub url_entry: TemplateChild<adw::EntryRow>,

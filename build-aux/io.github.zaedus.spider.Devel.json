@@ -1,5 +1,5 @@
 {
-    "id" : "xyz.zaedus.spider",
+    "id" : "io.github.zaedus.spider",
     "runtime" : "org.gnome.Platform",
     "runtime-version" : "46",
     "sdk" : "org.gnome.Sdk",
@@ -43,7 +43,7 @@
             "sources" : [
                 {
                     "type" : "git",
-                    "url" : "file:///home/cs/Documents/Code/gnome"
+                    "url" : "../.."
                 }
             ]
         }

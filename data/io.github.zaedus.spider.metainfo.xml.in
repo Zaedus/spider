@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.zaedus.spider</id>
+  
+  <name>Spider</name>
+  <summary>Install and integrate web apps into the GNOME desktop!</summary>
+  <developer id="io.github.zaedus">
+    <name>Zaedus</name>
+    <url>https://github.com/Zaedus</url>
+  </developer>
+  
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+
+  <content_rating type="oars-1.1" />
+  
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>touch</control>
+  </supports>
+  
+  <description>
+    <p>
+      Spider is a program designed to make installing and using web apps simple and powerful 
+      while integrating with the GNOME desktop.
+    </p>
+    <ul>
+      <li><em>Sandboxed</em>: Each app has an entirely separate instance of the WebKit browser</li>
+      <li><em>Adaptive Window Styling</em> Each app's titlebar adapts to it's theme color</li>
+      <li><em>High quality favicons</em> Scrapes websites for a high quality favicon to use</li>
+    </ul>
+  </description>
+
+  <url type="homepage">https://github.com/Zaedus/spider</url>
+
+  <launchable type="desktop-id">io.github.zaedus.spider.desktop</launchable>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://github.com/user-attachments/assets/cd6a5cfd-3b5d-4c30-b568-1633f2843904</image>
+      <caption>Spider main window</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://github.com/user-attachments/assets/36c8fd05-4cba-4f15-869c-5cc349fa63b6</image>
+      <caption>Spider web app window on Github</caption>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <release version="0.0.1" date="2024-08-15" />
+  </releases>
+</component>

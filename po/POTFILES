@@ -1,4 +1,4 @@
-data/xyz.zaedus.spider.desktop.in
-data/xyz.zaedus.spider.metainfo.xml.in
-data/xyz.zaedus.spider.gschema.xml
+data/io.github.zaedus.spider.desktop.in
+data/io.github.zaedus.spider.metainfo.xml.in
+data/io.github.zaedus.spider.gschema.xml
 src/window.ui

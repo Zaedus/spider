@@ -35,7 +35,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, gtk::CompositeTemplate)]
-    #[template(resource = "/xyz/zaedus/spider/window.ui")]
+    #[template(resource = "/io/github/zaedus/spider/window.ui")]
     pub struct SpiderWindow {
         // Template widgets
         #[template_child]
