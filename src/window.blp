@@ -4,10 +4,21 @@ using Adw 1;
 template $SpiderWindow: Adw.ApplicationWindow {
   default-width: 800;
   default-height: 600;
+  width-request: 400;
+  height-request: 200;
 
-  Adw.ToastOverlay toast_overlay {
+  Adw.Breakpoint {
+    condition ("max-width: 600px")
+
+    setters {
+      split_view.collapsed: true;
+    }
+  }
+
+  content: Adw.ToastOverlay toast_overlay {
     Adw.NavigationSplitView split_view {
       min-sidebar-width: 250;
+      show-content: false;
       [sidebar]
       Adw.NavigationPage {
         title: "Applications";
@@ -44,7 +55,7 @@ template $SpiderWindow: Adw.ApplicationWindow {
       [content]
       $HomePage home_page {}
     }
-  }
+  };
 }
 
 
