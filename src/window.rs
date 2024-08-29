@@ -92,6 +92,7 @@ mod imp {
                 if let Some(details) = row.imp().details.get() {
                     let page = AppPage::new(details.clone());
                     self.split_view.set_content(Some(&page));
+                    self.split_view.set_show_content(true);
                 }
             }
         }
