@@ -4,7 +4,7 @@ use glib::{clone, Object};
 use gtk::{gdk, glib};
 use std::cell::RefCell;
 use webkit::prelude::*;
-use webkit::WebView;
+use webkit::{PolicyDecisionType, WebView};
 
 use crate::apps::AppDetails;
 
@@ -160,11 +160,27 @@ mod imp {
             }
 
             // Build WebView
-            WebView::builder()
+            let webview = WebView::builder()
                 .network_session(&network_session)
                 .settings(&settings)
                 .user_content_manager(&content_manager)
-                .build()
+                .build();
+
+            webview.connect_decide_policy(|_, decision, decision_type| {
+                if decision_type == PolicyDecisionType::NewWindowAction {
+                    let mut action =
+                        decision.property::<webkit::NavigationAction>("navigation-action");
+                    if let Some(uri) = action.request().and_then(|a| a.uri()) {
+                        open::that_detached(uri).unwrap();
+
+                        decision.ignore();
+                        return false;
+                    }
+                }
+                true
+            });
+
+            webview
         }
     }
 }
