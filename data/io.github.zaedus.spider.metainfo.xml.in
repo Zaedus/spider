@@ -28,9 +28,9 @@
       while integrating with the GNOME desktop.
     </p>
     <ul>
-      <li><em>Sandboxed</em>: Each app has an entirely separate instance of the WebKit browser</li>
-      <li><em>Adaptive Window Styling</em> Each app's titlebar adapts to it's theme color</li>
-      <li><em>High quality favicons</em> Scrapes websites for a high quality favicon to use</li>
+      <li><em>Sandboxed:</em> Each app has an entirely separate instance of the WebKit browser</li>
+      <li><em>Adaptive Window Styling:</em> Each app's titlebar adapts to it's theme color</li>
+      <li><em>High quality favicons:</em> Scrapes websites for a high quality favicon to use</li>
     </ul>
   </description>
 
@@ -48,6 +48,15 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.0.2" data="2024-09-03">
+      <description>
+        <ul>
+          <li>Fixed adaptivity</li>
+          <li>Fixed links not opening</li>
+        </ul>
+      </description>
+      <url>https://github.com/Zaedus/spider/releases/tag/v0.0.2</url>
+    </release>
     <release version="0.0.1" date="2024-08-15" />
   </releases>
 </component>
