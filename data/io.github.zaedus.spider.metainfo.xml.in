@@ -8,7 +8,7 @@
     <name>Zaedus</name>
     <url>https://github.com/Zaedus</url>
   </developer>
-  <icon type="stock">io.github.spider.zaedus</icon>
+  <icon type="stock">io.github.zaedus.spider</icon>
   <icon type="remote">https://raw.githubusercontent.com/Zaedus/spider/master/data/icons/hicolor/scalable/apps/io.github.zaedus.spider.svg</icon>
   
   <metadata_license>FSFAP</metadata_license>
@@ -28,13 +28,18 @@
       while integrating with the GNOME desktop.
     </p>
     <ul>
-      <li><em>Sandboxed</em>: Each app has an entirely separate instance of the WebKit browser</li>
-      <li><em>Adaptive Window Styling</em> Each app's titlebar adapts to it's theme color</li>
-      <li><em>High quality favicons</em> Scrapes websites for a high quality favicon to use</li>
+      <li><em>Sandboxed:</em> Each app has an entirely separate instance of the WebKit browser</li>
+      <li><em>Adaptive Window Styling:</em> Each app's titlebar adapts to it's theme color</li>
+      <li><em>High quality favicons:</em> Scrapes websites for a high quality favicon to use</li>
     </ul>
   </description>
 
   <url type="homepage">https://github.com/Zaedus/spider</url>
+
+  <categories>
+    <category>Network</category>
+    <category>WebBrowser</category>
+  </categories>
 
   <launchable type="desktop-id">io.github.zaedus.spider.desktop</launchable>
   <screenshots>
@@ -48,6 +53,15 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.0.2" date="2024-09-03">
+      <description>
+        <ul>
+          <li>Fixed adaptivity</li>
+          <li>Fixed links not opening</li>
+        </ul>
+      </description>
+      <url>https://github.com/Zaedus/spider/releases/tag/v0.0.2</url>
+    </release>
     <release version="0.0.1" date="2024-08-15" />
   </releases>
 </component>
