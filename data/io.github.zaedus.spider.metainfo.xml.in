@@ -3,7 +3,7 @@
   <id>io.github.zaedus.spider</id>
   
   <name>Spider</name>
-  <summary>Install and integrate web apps into the GNOME desktop!</summary>
+  <summary>Install Web Apps with Ease</summary>
   <developer id="io.github.zaedus">
     <name>Zaedus</name>
     <url>https://github.com/Zaedus</url>
@@ -21,6 +21,11 @@
     <control>keyboard</control>
     <control>touch</control>
   </supports>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#c8c8c8</color>
+    <color type="primary" scheme_preference="dark">#b48282</color>
+  </branding>
   
   <description>
     <p>
@@ -28,9 +33,9 @@
       while integrating with the GNOME desktop.
     </p>
     <ul>
-      <li><em>Sandboxed:</em> Each app has an entirely separate instance of the WebKit browser</li>
+      <li><em>Sandboxed:</em> Each web app is completely isolated</li>
       <li><em>Adaptive Window Styling:</em> Each app's titlebar adapts to it's theme color</li>
-      <li><em>High quality favicons:</em> Scrapes websites for a high quality favicon to use</li>
+      <li><em>High quality icons:</em> Scrapes websites for a high quality icons to use</li>
     </ul>
   </description>
 
@@ -53,6 +58,16 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.0.3" date="2024-09-21">
+      <description>
+        <ul>
+          <li>Added progress bar</li>
+          <li>Added navigation buttons</li>
+          <li>Fixed no audio output</li>
+        </ul>
+      </description>
+      <url>https://github.com/Zaedus/spider/releases/tag/v0.0.3</url>
+    </release>
     <release version="0.0.2" date="2024-09-03">
       <description>
         <ul>
