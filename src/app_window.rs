@@ -1,6 +1,6 @@
 use adw::prelude::*;
 use adw::subclass::prelude::*;
-use glib::{clone, Object};
+use glib::clone;
 use gtk::{gdk, gio, glib};
 use std::cell::RefCell;
 use webkit::prelude::*;
@@ -18,8 +18,6 @@ fn format_css(id: &str, bg: &str) -> String {
 }
 
 mod imp {
-
-    use std::borrow::Borrow;
 
     use super::*;
 
@@ -215,13 +213,6 @@ mod imp {
                     _self.update_nav_buttons(webview);
                 }
             ));
-            webview.connect_load_changed(clone!(
-                #[weak(rename_to=_self)]
-                self,
-                move |webview: &WebView, _| {
-                    _self.update_nav_buttons(webview);
-                }
-            ));
 
             webview
         }
@@ -238,8 +229,29 @@ mod imp {
         }
 
         fn update_nav_buttons(&self, webview: &WebView) {
-            self.forward_button.set_sensitive(webview.can_go_forward());
-            self.back_button.set_sensitive(webview.can_go_back());
+            // The back_forward_list hasn't updated by this point
+            // We correct by comparing the current uri with where it was in the list
+            // This is probably rife with edge cases lol
+            let list = webview.back_forward_list().unwrap();
+
+            if list.back_item().and_then(|x| x.uri()) == webview.uri() {
+                println!("{}", list.back_list().len());
+                self.back_button.set_sensitive(list.back_list().len() != 1);
+                self.forward_button
+                    .set_sensitive(list.forward_list().is_empty());
+            } else if list.forward_item().and_then(|x| x.uri()) == webview.uri() {
+                self.back_button.set_sensitive(list.back_list().is_empty());
+                self.forward_button
+                    .set_sensitive(list.forward_list().len() != 1);
+            } else {
+                println!("---");
+                println!("Back Item: {:?}", list.back_item().map(|x| x.uri()));
+                println!("Forward Item: {:?}", list.forward_item().map(|x| x.uri()));
+                println!("URI: {:?}", webview.uri());
+                println!("---");
+                self.forward_button.set_sensitive(webview.can_go_forward());
+                self.back_button.set_sensitive(webview.can_go_back());
+            }
         }
     }
 
