@@ -33,6 +33,8 @@ mod imp {
             let obj = self.obj();
             obj.setup_gactions();
             obj.set_accels_for_action("app.quit", &["<primary>q"]);
+            obj.set_accels_for_action("win.back", &["<alt>Left", "Back"]);
+            obj.set_accels_for_action("win.forward", &["<alt>Right", "Forward"]);
         }
     }
 
@@ -149,8 +151,7 @@ impl SpiderApplication {
             Ok(window)
         } else {
             let details = get_app_details(id.as_str()).ok_or(anyhow!("No app with id {}", id))?;
-            let window = AppWindow::new(&details);
-            self.add_window(&window);
+            let window = AppWindow::new(self, &details);
             Ok(window)
         }
     }

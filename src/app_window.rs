@@ -1,7 +1,7 @@
 use adw::prelude::*;
 use adw::subclass::prelude::*;
 use glib::{clone, Object};
-use gtk::{gdk, glib};
+use gtk::{gdk, gio, glib};
 use std::cell::RefCell;
 use webkit::prelude::*;
 use webkit::{PolicyDecisionType, WebView};
@@ -19,6 +19,8 @@ fn format_css(id: &str, bg: &str) -> String {
 
 mod imp {
 
+    use std::borrow::Borrow;
+
     use super::*;
 
     #[derive(Default, Debug, gtk::CompositeTemplate)]
@@ -26,6 +28,14 @@ mod imp {
     pub struct AppWindow {
         #[template_child]
         pub toolbar: TemplateChild<adw::ToolbarView>,
+        #[template_child]
+        pub webview_container: TemplateChild<adw::Bin>,
+        #[template_child]
+        pub progress_bar: TemplateChild<gtk::ProgressBar>,
+        #[template_child]
+        pub back_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        pub forward_button: TemplateChild<gtk::Button>,
 
         pub details: RefCell<AppDetails>,
         pub webview: RefCell<webkit::WebView>,
@@ -40,13 +50,20 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             klass.bind_template();
+            klass.bind_template_callbacks();
         }
         fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
             obj.init_template();
         }
     }
 
-    impl ObjectImpl for AppWindow {}
+    impl ObjectImpl for AppWindow {
+        fn constructed(&self) {
+            self.parent_constructed();
+            self.obj().setup_gestures();
+            self.obj().setup_gactions();
+        }
+    }
     impl WidgetImpl for AppWindow {}
     impl WindowImpl for AppWindow {}
     impl ApplicationWindowImpl for AppWindow {}
@@ -64,7 +81,7 @@ mod imp {
             // Set up the WebView
             let webview = self.create_webview();
             webview.load_uri(&details.url);
-            self.toolbar.set_content(Some(&webview));
+            self.webview_container.set_child(Some(&webview));
             self.webview.replace(webview);
 
             self.load_colors(None);
@@ -180,7 +197,61 @@ mod imp {
                 true
             });
 
+            webview.connect_estimated_load_progress_notify(clone!(
+                #[weak(rename_to=_self)]
+                self,
+                move |webview: &WebView| {
+                    let progress = webview.estimated_load_progress();
+                    _self
+                        .progress_bar
+                        .set_fraction(if progress == 1.0 { 0.0 } else { progress });
+                }
+            ));
+
+            webview.connect_uri_notify(clone!(
+                #[weak(rename_to=_self)]
+                self,
+                move |webview: &WebView| {
+                    _self.update_nav_buttons(webview);
+                }
+            ));
+            webview.connect_load_changed(clone!(
+                #[weak(rename_to=_self)]
+                self,
+                move |webview: &WebView, _| {
+                    _self.update_nav_buttons(webview);
+                }
+            ));
+
             webview
+        }
+
+        pub fn go_back(&self) {
+            let webview = self.webview.borrow();
+            webview.go_back();
+            self.update_nav_buttons(&webview);
+        }
+        pub fn go_forward(&self) {
+            let webview = self.webview.borrow();
+            webview.go_forward();
+            self.update_nav_buttons(&webview);
+        }
+
+        fn update_nav_buttons(&self, webview: &WebView) {
+            self.forward_button.set_sensitive(webview.can_go_forward());
+            self.back_button.set_sensitive(webview.can_go_back());
+        }
+    }
+
+    #[gtk::template_callbacks]
+    impl AppWindow {
+        #[template_callback]
+        fn on_back_clicked(&self, _: gtk::Button) {
+            self.go_back()
+        }
+        #[template_callback]
+        fn on_forward_clicked(&self, _: gtk::Button) {
+            self.go_forward();
         }
     }
 }
@@ -188,16 +259,55 @@ mod imp {
 glib::wrapper! {
     pub struct AppWindow(ObjectSubclass<imp::AppWindow>)
         @extends adw::ApplicationWindow, gtk::ApplicationWindow, gtk::Window, gtk::Widget,
-        @implements gtk::Accessible, gtk::Actionable, gtk::Buildable, gtk::ConstraintTarget;
+        @implements gtk::Accessible, gtk::Actionable, gtk::Buildable, gtk::ConstraintTarget, gio::ActionMap, gio::ActionGroup, gtk::Native, gtk::ShortcutManager;
 }
 
 impl AppWindow {
-    pub fn new(details: &AppDetails) -> Self {
-        let obj: Self = Object::builder().build();
+    pub fn new<P: IsA<gtk::Application>>(application: &P, details: &AppDetails) -> Self {
+        let obj: Self = glib::Object::builder()
+            .property("application", application)
+            .build();
         obj.imp().set_details(details);
         obj
     }
+
     pub fn id(&self) -> String {
         self.imp().details.borrow().id.clone()
+    }
+
+    fn setup_gactions(&self) {
+        self.add_action_entries([
+            gio::ActionEntry::builder("forward")
+                .activate(move |win: &Self, _, _| win.imp().go_forward())
+                .build(),
+            gio::ActionEntry::builder("back")
+                .activate(move |win: &Self, _, _| win.imp().go_back())
+                .build(),
+        ]);
+    }
+    fn setup_gestures(&self) {
+        let gesture = gtk::GestureClick::new();
+        gesture.set_button(0);
+
+        // Prevents children (the webview) from seeing the Claimed events
+        gesture.set_propagation_phase(gtk::PropagationPhase::Capture);
+
+        // Handle back (8) and forward (9) mouse button events
+        gesture.connect_pressed(clone!(
+            #[weak(rename_to=_self)]
+            self,
+            move |gesture, _, _, _| {
+                if gesture.current_button() == 8 {
+                    gesture.set_state(gtk::EventSequenceState::Claimed);
+                    _self.imp().go_back();
+                }
+                if gesture.current_button() == 9 {
+                    gesture.set_state(gtk::EventSequenceState::Claimed);
+                    _self.imp().go_forward();
+                }
+            }
+        ));
+
+        self.add_controller(gesture);
     }
 }

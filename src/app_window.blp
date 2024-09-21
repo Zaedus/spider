@@ -1,12 +1,39 @@
 using Gtk 4.0;
 using Adw 1;
-using WebKit 6.0;
 
 template $AppWindow : Adw.ApplicationWindow {
   default-width: 500;
   default-height: 500;
   Adw.ToolbarView toolbar {
     [top]
-    Adw.HeaderBar {}
+    Adw.HeaderBar {
+      [start]
+      Box {
+        orientation: horizontal;
+
+        Button back_button {
+          icon-name: "go-previous";
+          clicked => $on_back_clicked() swapped;
+        }
+        Button forward_button {
+          icon-name: "go-next";
+          clicked => $on_forward_clicked() swapped;
+        }
+      }
+    }
+    content: Overlay {
+      can-target: true;
+
+      [overlay]
+      ProgressBar progress_bar {
+        fraction: 0;
+        styles ["osd"]
+        can-target: false;
+      }
+
+      Adw.Bin webview_container {
+        can-target: true;
+      }
+    };
   }
 }
