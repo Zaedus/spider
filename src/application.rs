@@ -122,6 +122,8 @@ impl SpiderApplication {
             .version(config::VERSION)
             .developers(vec!["Zaedus"])
             .copyright("© 2024 Zaedus")
+            .website("https://github.com/Zaedus/spider")
+            .issue_url("https://github.com/Zaedus/spider/issues")
             .build();
 
         about.present(Some(&window));
