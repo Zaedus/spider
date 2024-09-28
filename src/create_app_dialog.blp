@@ -29,6 +29,7 @@ template $CreateAppDialog: Adw.Dialog {
           Adw.EntryRow url_entry {
             title: "URL";
             show-apply-button: true;
+            sensitive: bind template.loading inverted;
             apply => $on_url_apply() swapped;
             changed => $validate_input_cb() swapped;
 
