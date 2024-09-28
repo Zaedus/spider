@@ -154,14 +154,13 @@ impl SpiderWindow {
     }
 
     fn confirm_delete_app(&self, id: String) {
-        let confirm_dialog = adw::MessageDialog::new(
-            Some(self),
+        let confirm_dialog = adw::AlertDialog::new(
             Some("Are you sure you want to delete this app?"),
             Some("This action CANNOT be undone."),
         );
         confirm_dialog.add_responses(&[("delete", "Delete"), ("cancel", "Cancel")]);
         confirm_dialog.set_response_appearance("delete", adw::ResponseAppearance::Destructive);
-        confirm_dialog.present();
+        confirm_dialog.present(Some(self));
         confirm_dialog.connect_response(
             Some("delete"),
             clone!(

@@ -115,8 +115,7 @@ impl SpiderApplication {
 
     fn show_about(&self) {
         let window = self.active_window().unwrap();
-        let about = adw::AboutWindow::builder()
-            .transient_for(&window)
+        let about = adw::AboutDialog::builder()
             .application_name("Spider")
             .application_icon(config::APP_ID)
             .developer_name("Zaedus")
@@ -125,7 +124,7 @@ impl SpiderApplication {
             .copyright("© 2024 Zaedus")
             .build();
 
-        about.present();
+        about.present(Some(&window));
     }
 
     fn find_app(&self, id: &str) -> Option<AppWindow> {
