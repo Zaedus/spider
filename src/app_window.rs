@@ -235,7 +235,6 @@ mod imp {
             let list = webview.back_forward_list().unwrap();
 
             if list.back_item().and_then(|x| x.uri()) == webview.uri() {
-                println!("{}", list.back_list().len());
                 self.back_button.set_sensitive(list.back_list().len() != 1);
                 self.forward_button
                     .set_sensitive(list.forward_list().is_empty());
@@ -244,11 +243,6 @@ mod imp {
                 self.forward_button
                     .set_sensitive(list.forward_list().len() != 1);
             } else {
-                println!("---");
-                println!("Back Item: {:?}", list.back_item().map(|x| x.uri()));
-                println!("Forward Item: {:?}", list.forward_item().map(|x| x.uri()));
-                println!("URI: {:?}", webview.uri());
-                println!("---");
                 self.forward_button.set_sensitive(webview.can_go_forward());
                 self.back_button.set_sensitive(webview.can_go_back());
             }
