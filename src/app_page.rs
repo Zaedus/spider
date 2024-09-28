@@ -102,7 +102,9 @@ mod imp {
         }
         #[template_callback]
         async fn on_icon_clicked(&self, _: gtk::Button) {
-            if let Ok(file) = self.get_new_icon().await {
+            if let Ok(file) =
+                util::icon_from_dialog(self.obj().root().and_downcast_ref::<gtk::Window>()).await
+            {
                 if let Err(err) = self.set_unsaved_icon(&file).await {
                     self.toast(err.to_string())
                 }
@@ -205,25 +207,6 @@ mod imp {
             self.titlebar_color.set_active(details.has_titlebar_color);
 
             self.setup_menu();
-        }
-        async fn get_new_icon(&self) -> anyhow::Result<gio::File> {
-            let filter = gtk::FileFilter::new();
-            filter.add_pixbuf_formats();
-
-            let filters = gio::ListStore::new::<gtk::FileFilter>();
-            filters.append(&filter);
-
-            let root = self.obj().root();
-            let file = gtk::FileDialog::builder()
-                .accept_label("Select")
-                .modal(true)
-                .title("App Icon")
-                .filters(&filters)
-                .build()
-                .open_future(root.and_downcast_ref::<gtk::Window>())
-                .await?;
-
-            Ok(file)
         }
         async fn set_unsaved_icon(&self, file: &gio::File) -> anyhow::Result<()> {
             let (buffer, _etag) = file.load_contents_future().await?;

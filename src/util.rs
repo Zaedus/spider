@@ -1,7 +1,7 @@
 use anyhow::bail;
 use futures::future::join_all;
 use gdk_pixbuf::Pixbuf;
-use gtk::{gdk, gio, glib};
+use gtk::{gdk, gio, glib, prelude::*};
 use image::{codecs::png::PngEncoder, ImageEncoder, ImageFormat};
 use isahc::{config, prelude::*};
 use lazy_static::lazy_static;
@@ -11,8 +11,8 @@ use url::Url;
 
 #[derive(Debug)]
 pub struct WebsiteMeta {
-    pub icon: Image,
-    pub title: String,
+    pub icon: Option<Image>,
+    pub title: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -231,13 +231,29 @@ pub async fn get_website_meta(url: Url) -> anyhow::Result<WebsiteMeta> {
         .map(|x| x.text())
         .next()
         .map(|x| x.collect::<String>());
-    if let Some(icon) = best_image.cloned() {
-        if let Some(title) = title {
-            Ok(WebsiteMeta { icon, title })
-        } else {
-            bail!("failed to fetch title")
-        }
-    } else {
-        bail!("failed to fetch icon")
-    }
+    Ok(WebsiteMeta {
+        icon: best_image.cloned(),
+        title,
+    })
+}
+
+pub async fn icon_from_dialog(
+    window: Option<&(impl IsA<gtk::Window> + Clone + 'static)>,
+) -> anyhow::Result<gio::File> {
+    let filter = gtk::FileFilter::new();
+    filter.add_pixbuf_formats();
+
+    let filters = gio::ListStore::new::<gtk::FileFilter>();
+    filters.append(&filter);
+
+    let file = gtk::FileDialog::builder()
+        .accept_label("Select")
+        .modal(true)
+        .title("App Icon")
+        .filters(&filters)
+        .build()
+        .open_future(window)
+        .await?;
+
+    Ok(file)
 }

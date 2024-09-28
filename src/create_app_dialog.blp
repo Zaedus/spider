@@ -2,50 +2,89 @@ using Gtk 4.0;
 using Adw 1;
 
 template $CreateAppDialog: Adw.Dialog {
-  title: "Create New Web App";
+  content-width: 400;
+  content-height: 300;
+  title: "Add a New Application";
 
   Adw.ToastOverlay toast_overlay {
     Adw.ToolbarView {
       [top]
       Adw.HeaderBar {}
-      
-      Adw.Clamp {
-        maximum-size: 400;
-        tightening-threshold: 300;
+
+      Box {
+        orientation: vertical;
+        spacing: 15;
         margin-end: 10;
         margin-start: 10;
         margin-top: 5;
         margin-bottom: 15;
 
-        Box {
-          orientation: vertical;
-          spacing: 15;
+        ListBox {
+          styles [
+            "boxed-list"
+          ]
 
-          ListBox {
-            styles ["boxed-list"]
-            selection-mode: none;
-            
-            Adw.EntryRow url_entry {
-              title: "URL";
-              
-              entry-activated => $on_create_clicked_conditional() swapped;
-              changed => $on_url_changed() swapped;
+          selection-mode: none;
+
+          Adw.EntryRow url_entry {
+            title: "URL";
+            show-apply-button: true;
+            apply => $on_url_apply() swapped;
+            changed => $validate_input_cb() swapped;
+
+            Adw.Spinner {
+              visible: bind template.loading;
             }
           }
 
-          Button button {
-            halign: center;
+          Adw.EntryRow title_entry {
+            title: "Title";
+            sensitive: bind template.loading inverted;
+            changed => $validate_input_cb() swapped;
 
-            styles ["pill", "suggested-action"]
-            sensitive: false;
+            // Aligns the edit indicator of title_entry with url_entry
+            Spinner {
+              visible: false;
+            }
+          }
 
-            Stack button_stack {
-              Label button_label { label: "Create"; }
-              Spinner button_spinner {}
+          Adw.ActionRow {
+            title: "Icon";
+            subtitle: "Icon MUST be square";
+            sensitive: bind template.loading inverted;
+
+            Button {
+              icon-name: "image-symbolic";
+              valign: center;
+              sensitive: bind template.loading inverted;
+              clicked => $on_icon_clicked() swapped;
+
+              Image icon_image {}
+            }
+          }
+        }
+
+        Button button {
+          halign: center;
+          valign: end;
+          vexpand: true;
+
+          styles [
+            "pill",
+            "suggested-action"
+          ]
+
+          sensitive: false;
+
+          Stack button_stack {
+            Label button_label {
+              label: "Create";
             }
 
-            clicked => $on_create_clicked() swapped;
+            Adw.Spinner button_spinner {}
           }
+
+          clicked => $on_create_clicked() swapped;
         }
       }
     }
