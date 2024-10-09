@@ -47,10 +47,13 @@ mod imp {
 
             // Get or create window to present
             let window = if let Some(id) = command_line.arguments().get(1) {
-                self.obj()
-                    .create_app(id.to_string_lossy().to_string())
-                    .unwrap()
-                    .upcast()
+                match self.obj().create_app(id.to_string_lossy().to_string()) {
+                    Ok(window) => window.upcast(),
+                    Err(err) => {
+                        eprintln!("Error: {err}");
+                        return glib::ExitCode::FAILURE;
+                    }
+                }
             } else if let Some(window) = application.active_window() {
                 window
             } else {
