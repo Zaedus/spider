@@ -4,7 +4,7 @@ use glib::clone;
 use gtk::{gdk, gio, glib};
 use std::cell::RefCell;
 use webkit::prelude::*;
-use webkit::{PolicyDecisionType, WebView};
+use webkit::{HardwareAccelerationPolicy, PolicyDecisionType, WebView};
 
 use crate::apps::AppDetails;
 
@@ -126,8 +126,17 @@ mod imp {
             let settings = webkit::Settings::builder()
                 .enable_webgl(true)
                 .enable_webrtc(true)
+                .enable_webaudio(true)
+                .enable_media(true)
+                .enable_mediasource(true)
                 .enable_encrypted_media(true)
                 .enable_media_capabilities(true)
+                .hardware_acceleration_policy(HardwareAccelerationPolicy::Always)
+                .enable_2d_canvas_acceleration(true)
+                .enable_html5_local_storage(true)
+                .enable_html5_database(true)
+                .enable_hyperlink_auditing(true)
+                .enable_site_specific_quirks(true)
                 .enable_developer_extras(true)
                 .build();
 
