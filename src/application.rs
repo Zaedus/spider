@@ -1,3 +1,5 @@
+use std::process::Command;
+
 use adw::prelude::*;
 use adw::subclass::prelude::*;
 use anyhow::anyhow;
@@ -73,16 +75,16 @@ mod imp {
             }
 
             // Get or create window to present
-            let window = if let Some(id) = command_line.arguments().get(1) {
-                match self.obj().create_app(id.to_string_lossy().to_string()) {
-                    Ok(window) => window.upcast(),
+            let window: gtk::Window = if let Some(id) = command_line.arguments().get(1) {
+                match get_app_details(&id.to_string_lossy())
+                    .ok_or(anyhow!("No app with id {:?}", id))
+                {
+                    Ok(details) => AppWindow::new(&self.obj().clone(), &details).upcast(),
                     Err(err) => {
                         eprintln!("Error: {err}");
                         return glib::ExitCode::FAILURE;
                     }
                 }
-            } else if let Some(window) = application.active_window() {
-                window
             } else {
                 SpiderWindow::new(&*application).upcast()
             };
@@ -133,23 +135,13 @@ impl SpiderApplication {
             gio::ActionEntry::builder("open-app")
                 .parameter_type(Some(&String::static_variant_type()))
                 .activate(move |app: &Self, _, id| {
-                    app.create_app(
-                        id.expect("no id provided")
-                            .get::<String>()
-                            .expect("invalid id type provided"),
-                    )
-                    .unwrap()
-                    .present()
-                })
-                .build(),
-            gio::ActionEntry::builder("close-app")
-                .parameter_type(Some(&String::static_variant_type()))
-                .activate(move |app: &Self, _, id| {
-                    app.close_app(
-                        id.expect("no id provided")
-                            .get::<String>()
-                            .expect("invalid id type provided"),
-                    )
+                    let id = id
+                        .expect("no id provided")
+                        .get::<String>()
+                        .expect("invalid id type provided");
+                    if let Err(err) = app.open_app(&id) {
+                        eprintln!("Failed to open app {id}: {err}")
+                    }
                 })
                 .build(),
         ]);
@@ -171,31 +163,8 @@ impl SpiderApplication {
         about.present(Some(&window));
     }
 
-    fn find_app(&self, id: &str) -> Option<AppWindow> {
-        for window in self.windows() {
-            if let Ok(window) = window.downcast::<AppWindow>() {
-                if window.id() == id {
-                    return Some(window);
-                }
-            }
-        }
-        None
-    }
-
-    fn close_app(&self, id: String) {
-        if let Some(window) = self.find_app(&id) {
-            window.set_hide_on_close(false);
-            window.close();
-        }
-    }
-
-    fn create_app(&self, id: String) -> anyhow::Result<AppWindow> {
-        if let Some(window) = self.find_app(&id) {
-            Ok(window)
-        } else {
-            let details = get_app_details(id.as_str()).ok_or(anyhow!("No app with id {}", id))?;
-            let window = AppWindow::new(self, &details);
-            Ok(window)
-        }
+    fn open_app(&self, id: &str) -> anyhow::Result<()> {
+        Command::new("spider").arg(id).spawn()?;
+        Ok(())
     }
 }
