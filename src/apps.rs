@@ -16,7 +16,7 @@ use lazy_static::lazy_static;
 
 use crate::{application::settings, config, util::to_gdk_texture};
 
-type AppsSettings = HashMap<String, HashMap<String, String>>;
+pub type AppsSettings = HashMap<String, HashMap<String, String>>;
 
 lazy_static! {
     static ref data_dir: PathBuf = glib::user_data_dir().join(glib::application_name().unwrap());

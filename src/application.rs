@@ -6,8 +6,10 @@ use gtk::{gio, glib};
 use crate::app_window::AppWindow;
 use crate::apps::clean_app_dirs;
 use crate::apps::get_app_details;
+use crate::apps::AppsSettings;
 use crate::config;
 use crate::SpiderWindow;
+use glib::{OptionArg, OptionFlags};
 
 pub fn settings() -> gio::Settings {
     gio::Settings::new(config::APP_ID)
@@ -32,6 +34,14 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
             obj.setup_gactions();
+            obj.add_main_option(
+                "list-applications",
+                glib::Char::from(b'l'),
+                OptionFlags::NONE,
+                OptionArg::None,
+                "lists the known applications",
+                None,
+            );
             obj.set_accels_for_action("app.quit", &["<primary>q"]);
             obj.set_accels_for_action("win.back", &["<alt>Left", "Back"]);
             obj.set_accels_for_action("win.forward", &["<alt>Right", "Forward"]);
@@ -44,6 +54,22 @@ mod imp {
 
             // Clean up
             clean_app_dirs().unwrap();
+
+            // If listing application via the command line
+            if command_line
+                .options_dict()
+                .lookup::<bool>("list-applications")
+                .unwrap_or(None)
+                .unwrap_or(false)
+            {
+                let apps_settings = settings().get::<AppsSettings>("apps-settings");
+                for id in settings().get::<Vec<String>>("app-ids") {
+                    if let Some(title) = apps_settings.get(&id).and_then(|x| x.get("title")) {
+                        println!("{id}\t{title}");
+                    }
+                }
+                return glib::ExitCode::SUCCESS;
+            }
 
             // Get or create window to present
             let window = if let Some(id) = command_line.arguments().get(1) {
