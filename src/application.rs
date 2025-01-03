@@ -8,6 +8,7 @@ use crate::apps::clean_app_dirs;
 use crate::apps::get_app_details;
 use crate::apps::AppsSettings;
 use crate::config;
+use crate::config::APP_ID;
 use crate::SpiderWindow;
 use glib::{OptionArg, OptionFlags};
 
@@ -102,11 +103,23 @@ glib::wrapper! {
 }
 
 impl SpiderApplication {
-    pub fn new(application_id: &str, flags: &gio::ApplicationFlags) -> Self {
+    pub fn new(flags: &gio::ApplicationFlags) -> Self {
         glib::Object::builder()
-            .property("application-id", application_id)
             .property("flags", flags)
+            .property("application-id", Self::gen_app_id())
             .build()
+    }
+
+    fn gen_app_id() -> String {
+        let args: Vec<String> = std::env::args().take(2).collect();
+
+        if let Some(id) = args.get(1) {
+            if settings().get::<Vec<String>>("app-ids").contains(&id) {
+                return format!("{}.{}", APP_ID, id);
+            }
+        };
+
+        APP_ID.to_string()
     }
 
     fn setup_gactions(&self) {

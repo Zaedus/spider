@@ -1,6 +1,7 @@
 use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gtk::{gio, glib};
+use rand::Rng;
 use std::cell::{Cell, RefCell};
 
 use url::Url;
@@ -8,13 +9,19 @@ use url::Url;
 use ashpd::WindowIdentifier;
 
 use crate::{
+    application::settings,
     apps::{install_app, AppDetails},
     util,
 };
 
-use uuid::Uuid;
-
 use anyhow::bail;
+
+fn gen_id() -> String {
+    rand::thread_rng()
+        .sample_iter(rand::distributions::Uniform::from('a'..='z'))
+        .take(10)
+        .collect()
+}
 
 mod imp {
 
@@ -117,10 +124,20 @@ mod imp {
         async fn on_create_clicked(&self, _: gtk::Button) {
             if self.validate_input() {
                 self.button.set_sensitive(false);
-                self.button_stack.set_visible_child(&self.button_spinner.get());
+                self.button_stack
+                    .set_visible_child(&self.button_spinner.get());
+
+                // Gen unique ID
+                let app_ids =
+                    gio::prelude::SettingsExtManual::get::<Vec<String>>(&settings(), "app-ids");
+                let mut id = gen_id();
+                while app_ids.contains(&id) {
+                    id = gen_id();
+                }
+
                 if let Err(err) = install_app(
                     &AppDetails::new(
-                        Uuid::new_v4().to_string(),
+                        id,
                         self.title_entry.text().to_string(),
                         self.url_entry.text().to_string(),
                     ),
@@ -135,7 +152,8 @@ mod imp {
                     self.obj().close();
                 }
                 self.button.set_sensitive(true);
-                self.button_stack.set_visible_child(&self.button_label.get());
+                self.button_stack
+                    .set_visible_child(&self.button_label.get());
             }
         }
     }
