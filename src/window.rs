@@ -169,11 +169,6 @@ impl SpiderWindow {
                 #[strong]
                 id,
                 move |_, _| {
-                    _self
-                        .clone()
-                        .upcast::<gtk::Widget>()
-                        .activate_action("app.close-app", Some(&id.to_variant()))
-                        .unwrap();
                     glib::spawn_future_local(clone!(
                         #[strong]
                         _self,
