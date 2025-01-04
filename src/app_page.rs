@@ -129,6 +129,11 @@ mod imp {
             ));
             self.page_menu
                 .append_item(&menu_item_and_target("Delete", "win.delete", &details.id));
+            self.page_menu.append_item(&menu_item_and_target(
+                "Reinstall",
+                "win.reinstall",
+                &details.id,
+            ));
         }
         fn diff_significance(&self) -> DiffSignificance {
             let unsaved = self.unsaved_details.borrow().clone().unwrap();

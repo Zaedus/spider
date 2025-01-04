@@ -8,6 +8,7 @@ anyhow = "1.0.86"
 ashpd = { version = "0.9.0", features = ["async-std", "gtk4"] }
 async-channel = "2.3.1"
 async-iterator = "2.3.0"
+dircpy = "0.3.19"
 futures = "0.3.30"
 gdk-pixbuf = "0.20.0"
 gettext-rs = { version = "0.7", features = ["gettext-system"] }

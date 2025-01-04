@@ -10,6 +10,7 @@ use ashpd::{
     },
     WindowIdentifier,
 };
+use dircpy::copy_dir;
 use gtk::prelude::SettingsExtManual;
 use gtk::{gdk, glib};
 use lazy_static::lazy_static;
@@ -225,6 +226,23 @@ pub fn clean_app_dirs() -> anyhow::Result<()> {
                 && !app_ids.contains(&item.file_name().to_string_lossy().to_string())
             {
                 std::fs::remove_dir_all(item.path()).unwrap();
+            }
+        }
+    }
+    Ok(())
+}
+
+pub fn copy_app_dir(old_id: &str, new_id: &str) -> anyhow::Result<()> {
+    for folder in [data_dir.to_path_buf(), cache_dir.to_path_buf()] {
+        if !folder.exists() {
+            continue;
+        }
+        for item in std::fs::read_dir(folder.clone()).unwrap().flatten() {
+            if item.file_type().unwrap().is_dir()
+                && item.file_name().to_string_lossy().to_string() == old_id
+            {
+                copy_dir(folder.join(old_id), folder.join(new_id))?;
+                break;
             }
         }
     }

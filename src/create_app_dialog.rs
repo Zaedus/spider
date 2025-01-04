@@ -16,11 +16,23 @@ use crate::{
 
 use anyhow::bail;
 
+pub const APP_ID_LENGTH: usize = 10;
+
 fn gen_id() -> String {
     rand::thread_rng()
         .sample_iter(rand::distributions::Uniform::from('a'..='z'))
-        .take(10)
+        .take(APP_ID_LENGTH)
         .collect()
+}
+
+pub fn gen_unique_id() -> String {
+    // Gen unique ID
+    let app_ids = gio::prelude::SettingsExtManual::get::<Vec<String>>(&settings(), "app-ids");
+    let mut id = gen_id();
+    while app_ids.contains(&id) {
+        id = gen_id();
+    }
+    id
 }
 
 mod imp {
@@ -127,17 +139,9 @@ mod imp {
                 self.button_stack
                     .set_visible_child(&self.button_spinner.get());
 
-                // Gen unique ID
-                let app_ids =
-                    gio::prelude::SettingsExtManual::get::<Vec<String>>(&settings(), "app-ids");
-                let mut id = gen_id();
-                while app_ids.contains(&id) {
-                    id = gen_id();
-                }
-
                 if let Err(err) = install_app(
                     &AppDetails::new(
-                        id,
+                        gen_unique_id(),
                         self.title_entry.text().to_string(),
                         self.url_entry.text().to_string(),
                     ),

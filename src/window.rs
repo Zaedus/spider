@@ -20,14 +20,16 @@
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
+use anyhow::anyhow;
+use ashpd::WindowIdentifier;
 use glib::clone;
 use gtk::{gio, glib};
 
 use crate::app_page::AppPage;
 use crate::app_row::AppRow;
 use crate::application::settings;
-use crate::apps::uninstall_app;
-use crate::create_app_dialog::CreateAppDialog;
+use crate::apps::{copy_app_dir, get_app_details, get_app_icon, install_app, uninstall_app};
+use crate::create_app_dialog::{gen_unique_id, CreateAppDialog, APP_ID_LENGTH};
 use crate::home_page::HomePage;
 
 mod imp {
@@ -126,6 +128,16 @@ impl SpiderWindow {
                     );
                 })
                 .build(),
+            gio::ActionEntry::builder("reinstall")
+                .parameter_type(Some(&String::static_variant_type()))
+                .activate(move |win: &Self, _, id| {
+                    win.confirm_reinstall_app(
+                        id.expect("no id provided")
+                            .get::<String>()
+                            .expect("invalid id type provided"),
+                    );
+                })
+                .build(),
             gio::ActionEntry::builder("notify")
                 .parameter_type(Some(&String::static_variant_type()))
                 .activate(move |win: &Self, _, msg| {
@@ -147,10 +159,71 @@ impl SpiderWindow {
             .map(|x| x.id())
     }
 
+    async fn reinstall_app(&self, id: String) -> anyhow::Result<()> {
+        // Generate with the new id format
+        let mut details = get_app_details(&id).ok_or(anyhow!("failed to get app details"))?;
+        let icon = get_app_icon(&id).await?;
+        let id = if id.len() != APP_ID_LENGTH {
+            let new_id = gen_unique_id();
+            copy_app_dir(id.as_str(), new_id.as_str())?;
+            uninstall_app(id.as_str()).await?;
+            new_id
+        } else {
+            id
+        };
+
+        details.id = id;
+
+        install_app(
+            &details,
+            icon,
+            &WindowIdentifier::from_native(&self.root().unwrap()).await,
+        )
+        .await?;
+
+        self.refresh();
+
+        Ok(())
+    }
+
     async fn delete_app(&self, id: String) -> anyhow::Result<()> {
         uninstall_app(id.as_str()).await?;
         self.refresh();
         Ok(())
+    }
+
+    fn confirm_reinstall_app(&self, id: String) {
+        let confirm_dialog = adw::AlertDialog::new(
+            Some("Are you sure you want to reinstall this app?"),
+            Some("This can fix faulty installations."),
+        );
+        confirm_dialog.add_responses(&[("reinstall", "Reinstall"), ("cancel", "Cancel")]);
+        confirm_dialog.set_response_appearance("reinstall", adw::ResponseAppearance::Destructive);
+        confirm_dialog.present(Some(self));
+        confirm_dialog.connect_response(
+            Some("reinstall"),
+            clone!(
+                #[strong(rename_to=_self)]
+                self,
+                #[strong]
+                id,
+                move |_, _| {
+                    glib::spawn_future_local(clone!(
+                        #[strong]
+                        _self,
+                        #[strong]
+                        id,
+                        async move {
+                            let message = match _self.reinstall_app(id).await {
+                                Ok(_) => "Successfully reinstalled app!".to_string(),
+                                Err(err) => err.to_string(),
+                            };
+                            _self.toast(message.as_str());
+                        }
+                    ));
+                }
+            ),
+        );
     }
 
     fn confirm_delete_app(&self, id: String) {
