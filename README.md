@@ -19,6 +19,9 @@ Install and integrate web apps into the GNOME desktop!
 
 > ✨ Please let me know if you'd like any more features! ✨
 
+> DO NOT BE AFRIAD TO SUBMIT BUGS!
+> I know there is lots of web functionality that you might be missing
+
 ## Building 🛠️
 
 ### GNOME Builder 🏗️
