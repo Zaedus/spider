@@ -1,32 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
   <id>io.github.zaedus.spider</id>
-  
   <name>Spider</name>
-  <summary>Install Web Apps with Ease</summary>
+  <summary>Install web apps</summary>
   <developer id="io.github.zaedus">
     <name>Zaedus</name>
     <url>https://github.com/Zaedus</url>
   </developer>
   <icon type="stock">io.github.zaedus.spider</icon>
   <icon type="remote">https://raw.githubusercontent.com/Zaedus/spider/master/data/icons/hicolor/scalable/apps/io.github.zaedus.spider.svg</icon>
-  
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-3.0-only</project_license>
-
-  <content_rating type="oars-1.1" />
-  
+  <content_rating type="oars-1.1"/>
   <supports>
     <control>pointing</control>
     <control>keyboard</control>
     <control>touch</control>
   </supports>
-
   <branding>
     <color type="primary" scheme_preference="light">#c8c8c8</color>
     <color type="primary" scheme_preference="dark">#b48282</color>
   </branding>
-  
   <description>
     <p>
       Spider is a program designed to make installing and using web apps simple and powerful 
@@ -38,26 +32,34 @@
       <li><em>High quality icons:</em> Scrapes websites for a high quality icons to use</li>
     </ul>
   </description>
-
   <url type="homepage">https://github.com/Zaedus/spider</url>
-
   <categories>
     <category>Network</category>
     <category>WebBrowser</category>
   </categories>
-
   <launchable type="desktop-id">io.github.zaedus.spider.desktop</launchable>
   <screenshots>
     <screenshot type="default">
-      <image>https://github.com/user-attachments/assets/cd6a5cfd-3b5d-4c30-b568-1633f2843904</image>
+      <image>https://files.catbox.moe/j5u9nl.png</image>
       <caption>Spider main window</caption>
     </screenshot>
     <screenshot>
-      <image>https://github.com/user-attachments/assets/36c8fd05-4cba-4f15-869c-5cc349fa63b6</image>
+      <image>https://files.catbox.moe/15af2c.png</image>
       <caption>Spider web app window on Github</caption>
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.0.4" date="2025-01-03">
+      <description>
+        <ul>
+          <li>Added command line parameter to list applications</li>
+          <li>Added app reinstallation to fix buggy web apps</li>
+          <li>Fixed web app icons not showing up separately</li>
+          <li>Other various bug fixes</li>
+        </ul>
+      </description>
+      <url>https://github.com/Zaedus/spider/releases/tag/v0.0.3</url>
+    </release>
     <release version="0.0.3" date="2024-09-21">
       <description>
         <ul>
@@ -77,6 +79,6 @@
       </description>
       <url>https://github.com/Zaedus/spider/releases/tag/v0.0.2</url>
     </release>
-    <release version="0.0.1" date="2024-08-15" />
+    <release version="0.0.1" date="2024-08-15"/>
   </releases>
 </component>
