@@ -2,3 +2,4 @@
 /target
 /src/config.rs
 /.flatpak-builder
+/build
