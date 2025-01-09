@@ -73,11 +73,24 @@ mod imp {
             let obj = self.obj();
             obj.setup_gactions();
             obj.refresh();
+            obj.load_window_size();
             self.apps_listbox.unselect_all();
         }
     }
     impl WidgetImpl for SpiderWindow {}
-    impl WindowImpl for SpiderWindow {}
+    impl WindowImpl for SpiderWindow {
+        fn close_request(&self) -> glib::Propagation {
+            let settings = settings();
+            let size = self.obj().default_size();
+            settings
+                .set_int("window-width", size.0)
+                .expect("Failed to save window size");
+            settings
+                .set_int("window-height", size.1)
+                .expect("Failed to save window size");
+            glib::Propagation::Proceed
+        }
+    }
     impl ApplicationWindowImpl for SpiderWindow {}
     impl AdwApplicationWindowImpl for SpiderWindow {}
 
@@ -283,5 +296,9 @@ impl SpiderWindow {
     }
     fn toast(&self, message: &str) {
         self.imp().toast_overlay.add_toast(adw::Toast::new(message));
+    }
+    fn load_window_size(&self) {
+        let settings = settings();
+        self.set_default_size(settings.int("window-width"), settings.int("window-height"));
     }
 }

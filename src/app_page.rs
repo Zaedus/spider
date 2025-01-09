@@ -179,7 +179,7 @@ mod imp {
             if let Some(unsaved_details) = unsaved_details {
                 match self.diff_significance() {
                     DiffSignificance::Settings => {
-                        apps::save_app_details(&unsaved_details)?;
+                        unsaved_details.save()?;
                     }
                     DiffSignificance::DesktopReinstall => {
                         apps::install_app(

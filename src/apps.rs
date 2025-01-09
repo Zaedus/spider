@@ -31,6 +31,9 @@ pub struct AppDetails {
     pub title: String,
     pub icon: Option<Vec<u8>>,
     pub has_titlebar_color: bool,
+    pub window_width: i32,
+    pub window_height: i32,
+    pub window_maximize: bool,
 }
 
 impl PartialEq for AppDetails {
@@ -51,6 +54,9 @@ impl Default for AppDetails {
             title: "".into(),
             has_titlebar_color: true,
             icon: None,
+            window_width: 400,
+            window_height: 400,
+            window_maximize: false,
         }
     }
 }
@@ -72,6 +78,12 @@ impl AppDetails {
                 "hastitlebarcolor".to_string(),
                 self.has_titlebar_color.to_string(),
             ),
+            ("windowwidth".to_string(), self.window_width.to_string()),
+            ("windowheight".to_string(), self.window_height.to_string()),
+            (
+                "windowmaximize".to_string(),
+                self.window_maximize.to_string(),
+            ),
         ];
 
         kv_pairs.into_iter().collect()
@@ -85,27 +97,26 @@ impl AppDetails {
     pub fn to_gdk_texture(&self, size: i32) -> gdk::Texture {
         to_gdk_texture(self.icon.clone().unwrap().as_slice(), size)
     }
+    pub fn save(&self) -> anyhow::Result<()> {
+        let settings = settings();
+        let mut apps = settings.get::<Vec<String>>("app-ids");
+        if !apps.contains(&self.id) {
+            apps.push(self.id.clone());
+        }
+
+        let mut apps_settings = settings.get::<AppsSettings>("apps-settings");
+        apps_settings.insert(self.id.clone(), self.to_hashmap());
+
+        settings.set("app-ids", apps)?;
+        settings.set("apps-settings", apps_settings)?;
+
+        Ok(())
+    }
 }
 
 #[inline]
 fn id_to_desktop(id: &str) -> String {
     format!("{}.{}.desktop", config::APP_ID, id)
-}
-
-pub fn save_app_details(details: &AppDetails) -> anyhow::Result<()> {
-    let settings = settings();
-    let mut apps = settings.get::<Vec<String>>("app-ids");
-    if !apps.contains(&details.id) {
-        apps.push(details.id.clone());
-    }
-
-    let mut apps_settings = settings.get::<AppsSettings>("apps-settings");
-    apps_settings.insert(details.id.clone(), details.to_hashmap());
-
-    settings.set("app-ids", apps)?;
-    settings.set("apps-settings", apps_settings)?;
-
-    Ok(())
 }
 
 pub fn delete_app_details(id: &str) -> anyhow::Result<()> {
@@ -146,6 +157,18 @@ pub fn get_app_details(id: &str) -> Option<AppDetails> {
             .get("hastitlebarcolor")
             .is_some_and(|x| x == "false"),
         icon: None,
+        window_width: settings
+            .get("windowwidth")
+            .and_then(|x| x.parse::<i32>().ok())
+            .unwrap_or(400),
+        window_height: settings
+            .get("windowheight")
+            .and_then(|x| x.parse::<i32>().ok())
+            .unwrap_or(400),
+        window_maximize: settings
+            .get("windowmaximize")
+            .and_then(|x| x.parse::<bool>().ok())
+            .unwrap_or(false),
     })
 }
 
@@ -202,7 +225,7 @@ Exec=env spider {}"#,
         )
         .await?;
 
-    save_app_details(details)?;
+    details.save()?;
 
     Ok(())
 }

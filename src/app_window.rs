@@ -63,7 +63,17 @@ mod imp {
         }
     }
     impl WidgetImpl for AppWindow {}
-    impl WindowImpl for AppWindow {}
+    impl WindowImpl for AppWindow {
+        fn close_request(&self) -> glib::Propagation {
+            let size = self.obj().default_size();
+            let mut details = self.details.borrow().clone();
+            details.window_width = size.0;
+            details.window_height = size.1;
+            details.window_maximize = self.obj().is_maximized();
+            details.save().unwrap(); // App is closing, shouldn't fail really ever
+            glib::Propagation::Proceed
+        }
+    }
     impl ApplicationWindowImpl for AppWindow {}
     impl AdwApplicationWindowImpl for AppWindow {}
 
@@ -75,6 +85,7 @@ mod imp {
             self.obj()
                 .set_widget_name(format!("s{}", details.id).as_str());
             self.obj().set_title(Some(details.title.as_str()));
+            self.obj().load_window_size();
 
             // Set up the WebView
             let webview = self.create_webview();
@@ -324,5 +335,13 @@ impl AppWindow {
         ));
 
         self.add_controller(gesture);
+    }
+    fn load_window_size(&self) {
+        let details = self.imp().details.borrow();
+        self.set_default_size(details.window_width, details.window_height);
+
+        if details.window_maximize {
+            self.maximize();
+        }
     }
 }
