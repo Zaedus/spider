@@ -116,7 +116,7 @@ impl SpiderApplication {
         let args: Vec<String> = std::env::args().take(2).collect();
 
         if let Some(id) = args.get(1) {
-            if settings().get::<Vec<String>>("app-ids").contains(&id) {
+            if settings().get::<Vec<String>>("app-ids").contains(id) {
                 return format!("{}.{}", APP_ID, id);
             }
         };

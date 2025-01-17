@@ -153,9 +153,8 @@ pub fn get_app_details(id: &str) -> Option<AppDetails> {
         id: id.to_string(),
         url: settings.get("url").unwrap().to_string(),
         title: settings.get("title").unwrap().to_string(),
-        has_titlebar_color: !settings
-            .get("hastitlebarcolor")
-            .is_some_and(|x| x == "false"),
+        has_titlebar_color: settings
+            .get("hastitlebarcolor").is_none_or(|x| x != "false"),
         icon: None,
         window_width: settings
             .get("windowwidth")
@@ -262,7 +261,7 @@ pub fn copy_app_dir(old_id: &str, new_id: &str) -> anyhow::Result<()> {
         }
         for item in std::fs::read_dir(folder.clone()).unwrap().flatten() {
             if item.file_type().unwrap().is_dir()
-                && item.file_name().to_string_lossy().to_string() == old_id
+                && item.file_name().to_string_lossy() == old_id
             {
                 copy_dir(folder.join(old_id), folder.join(new_id))?;
                 break;
