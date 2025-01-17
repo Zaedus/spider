@@ -4,6 +4,7 @@ use glib::clone;
 use gtk::{gdk, gio, glib};
 use std::cell::RefCell;
 use webkit::prelude::*;
+use webkit::soup;
 use webkit::{HardwareAccelerationPolicy, PolicyDecisionType, WebView};
 
 use crate::apps::AppDetails;
@@ -157,6 +158,34 @@ mod imp {
                 .data_directory(app_data_dir.join("data").to_str().unwrap())
                 .build();
 
+            network_session.connect_download_started(|_, dl| {
+                dl.connect_decide_destination(move |dl, dest| {
+                    let dest = dest.to_string();
+                    glib::spawn_future_local(clone!(
+                        #[weak]
+                        dl,
+                        async move {
+                            let dialog = gtk::FileDialog::builder()
+                                .accept_label("Save")
+                                .title("Download file")
+                                .modal(false)
+                                .initial_name(dest.as_str())
+                                .build();
+                            if let Some(path) = dialog
+                                .save_future(None::<&gtk::Window>)
+                                .await
+                                .ok()
+                                .and_then(|f| f.path())
+                            {
+                                let path = path.as_os_str().to_str().unwrap();
+                                dl.set_destination(path);
+                            }
+                        }
+                    ));
+                    true
+                });
+            });
+
             // Build cookie manager
             let cookie_manager = network_session.cookie_manager().unwrap();
 
@@ -201,7 +230,7 @@ mod imp {
                 .user_content_manager(&content_manager)
                 .build();
 
-            webview.connect_decide_policy(|_, decision, decision_type| {
+            webview.connect_decide_policy(|webview, decision, decision_type| {
                 if decision_type == PolicyDecisionType::NewWindowAction {
                     let mut action =
                         decision.property::<webkit::NavigationAction>("navigation-action");
@@ -210,6 +239,20 @@ mod imp {
 
                         decision.ignore();
                         return false;
+                    }
+                }
+                if decision_type == PolicyDecisionType::Response {
+                    let response = decision.property::<webkit::URIResponse>("response");
+                    let headers = response.property::<soup::MessageHeaders>("http-headers");
+                    if headers.one("Content-Type").and_then(|x| {
+                        if webview.can_show_mime_type(x.as_str()) {
+                            Some(())
+                        } else {
+                            None
+                        }
+                    }).is_none() {
+                        decision.download();
+                        return true;
                     }
                 }
                 true
