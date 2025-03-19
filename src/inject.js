@@ -1,4 +1,4 @@
-(function() {
+(function () {
   function send_color(color) {
     window.webkit.messageHandlers.themeColor.postMessage(color);
   }
@@ -16,7 +16,7 @@
       });
     });
 
-    send_color(elm.content)
+    send_color(elm.content);
     observer.observe(elm, { attributes: true });
   }
 
@@ -27,13 +27,13 @@
   }
 
   function listen_new_meta() {
-    const observer = new MutationObserver(_ => {
+    const observer = new MutationObserver((_) => {
       find_and_listen();
     });
 
     observer.observe(document.head, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
   }
 
