@@ -23,7 +23,7 @@
   </branding>
   <description>
     <p>
-      Spider is a program designed to make installing and using web apps simple and powerful 
+      Spider is a program designed to make installing and using web apps simple and powerful
       while integrating with the GNOME desktop.
     </p>
     <ul>
@@ -49,6 +49,15 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.0.5" date="2025-03-19">
+      <description>
+        <ul>
+          <li>Save main window and web app window sizes between launches</li>
+          <li>Handle download properly</li>
+        </ul>
+      </description>
+      <url>https://github.com/Zaedus/spider/releases/tag/v0.0.3</url>
+    </release>
     <release version="0.0.4" date="2025-01-03">
       <description>
         <ul>
