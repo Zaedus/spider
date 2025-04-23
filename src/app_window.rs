@@ -7,7 +7,7 @@ use webkit::prelude::*;
 use webkit::soup;
 use webkit::{HardwareAccelerationPolicy, PolicyDecisionType, WebView};
 
-use crate::apps::AppDetails;
+use crate::apps::{get_app_details, AppDetails};
 
 fn format_css(id: &str, bg: &str) -> String {
     let css = format!(
@@ -67,11 +67,12 @@ mod imp {
     impl WindowImpl for AppWindow {
         fn close_request(&self) -> glib::Propagation {
             let size = self.obj().default_size();
-            let mut details = self.details.borrow().clone();
-            details.window_width = size.0;
-            details.window_height = size.1;
-            details.window_maximize = self.obj().is_maximized();
-            details.save().unwrap(); // App is closing, shouldn't fail really ever
+            if let Some(mut details) = get_app_details(&self.details.borrow().id) {
+                details.window_width = size.0;
+                details.window_height = size.1;
+                details.window_maximize = self.obj().is_maximized();
+                details.save().unwrap(); // App is closing, shouldn't fail really ever
+            }
             glib::Propagation::Proceed
         }
     }
@@ -244,13 +245,17 @@ mod imp {
                 if decision_type == PolicyDecisionType::Response {
                     let response = decision.property::<webkit::URIResponse>("response");
                     let headers = response.property::<soup::MessageHeaders>("http-headers");
-                    if headers.one("Content-Type").and_then(|x| {
-                        if webview.can_show_mime_type(x.as_str()) {
-                            Some(())
-                        } else {
-                            None
-                        }
-                    }).is_none() {
+                    if headers
+                        .one("Content-Type")
+                        .and_then(|x| {
+                            if webview.can_show_mime_type(x.as_str()) {
+                                Some(())
+                            } else {
+                                None
+                            }
+                        })
+                        .is_none()
+                    {
                         decision.download();
                         return true;
                     }
