@@ -49,6 +49,17 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.0.6" date="2025-04-23">
+      <description>
+        <ul>
+          <li>Added spellcheck</li>
+          <li>Added scroll to app list</li>
+          <li>Improved error messages</li>
+          <li>Fixed settings reverting when closing web app</li>
+        </ul>
+      </description>
+      <url>https://github.com/Zaedus/spider/releases/tag/v0.0.3</url>
+    </release>
     <release version="0.0.5" date="2025-03-19">
       <description>
         <ul>
