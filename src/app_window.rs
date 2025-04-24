@@ -5,7 +5,7 @@ use gtk::{gdk, gio, glib};
 use std::cell::RefCell;
 use webkit::prelude::*;
 use webkit::soup;
-use webkit::{HardwareAccelerationPolicy, PolicyDecisionType, WebView};
+use webkit::{HardwareAccelerationPolicy, PolicyDecisionType, WebView, WebContext};
 
 use crate::apps::{get_app_details, AppDetails};
 
@@ -224,11 +224,17 @@ mod imp {
                 content_manager.add_script(&script);
             }
 
+            // Build WebContext
+            let web_context = WebContext::new();
+            web_context.set_spell_checking_enabled(true);
+            web_context.set_spell_checking_languages(&["en_US"]); // TODO: detect system language and put here
+
             // Build WebView
             let webview = WebView::builder()
                 .network_session(&network_session)
                 .settings(&settings)
                 .user_content_manager(&content_manager)
+                .web_context(&web_context)
                 .build();
 
             webview.connect_decide_policy(|webview, decision, decision_type| {
