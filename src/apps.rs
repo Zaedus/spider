@@ -3,6 +3,7 @@ use std::{
     path::PathBuf,
 };
 
+use anyhow::bail;
 use ashpd::{
     desktop::{
         dynamic_launcher::{DynamicLauncherProxy, LauncherType, PrepareInstallOptions},
@@ -154,7 +155,8 @@ pub fn get_app_details(id: &str) -> Option<AppDetails> {
         url: settings.get("url").unwrap().to_string(),
         title: settings.get("title").unwrap().to_string(),
         has_titlebar_color: settings
-            .get("hastitlebarcolor").is_none_or(|x| x != "false"),
+            .get("hastitlebarcolor")
+            .is_none_or(|x| x != "false"),
         icon: None,
         window_width: settings
             .get("windowwidth")
@@ -202,10 +204,21 @@ pub async fn install_app(
         .editable_name(false)
         .launcher_type(LauncherType::Application);
 
-    let response = proxy
+    let response = match proxy
         .prepare_install(wid, details.title.as_str(), icon, options)
-        .await?
-        .response()?;
+        .await
+    {
+        Err(ashpd::Error::Zbus(ashpd::zbus::Error::MethodError(_, msg, _))) => {
+            let mut msg = msg.unwrap_or("unknown".to_string());
+            if msg == "Dynamic launcher icon failed validation" {
+                msg = "Invalid icon, maybe bad size or format".to_string();
+            }
+            bail!(msg);
+        }
+        Err(err) => return Err(err.into()),
+        Ok(good) => good,
+    }
+    .response()?;
 
     let desktop_content = format!(
         r#"[Desktop Entry]
@@ -260,9 +273,7 @@ pub fn copy_app_dir(old_id: &str, new_id: &str) -> anyhow::Result<()> {
             continue;
         }
         for item in std::fs::read_dir(folder.clone()).unwrap().flatten() {
-            if item.file_type().unwrap().is_dir()
-                && item.file_name().to_string_lossy() == old_id
-            {
+            if item.file_type().unwrap().is_dir() && item.file_name().to_string_lossy() == old_id {
                 copy_dir(folder.join(old_id), folder.join(new_id))?;
                 break;
             }
