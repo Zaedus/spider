@@ -41,14 +41,16 @@ template $SpiderWindow: Adw.ApplicationWindow {
             }
           }
 
-          ListBox apps_listbox {
-            selection-mode: single;
-            activate-on-single-click: true;
-            focusable: false;
+          ScrolledWindow {
+            ListBox apps_listbox {
+              selection-mode: single;
+              activate-on-single-click: true;
+              focusable: false;
 
-            row-selected => $on_app_selected() swapped;
+              row-selected => $on_app_selected() swapped;
 
-            styles ["navigation-sidebar"]
+              styles ["navigation-sidebar"]
+            }
           }
         }
       }
