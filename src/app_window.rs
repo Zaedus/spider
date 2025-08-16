@@ -5,17 +5,22 @@ use gtk::{gdk, gio, glib};
 use std::cell::RefCell;
 use webkit::prelude::*;
 use webkit::soup;
-use webkit::{HardwareAccelerationPolicy, PolicyDecisionType, WebView, WebContext};
+use webkit::{HardwareAccelerationPolicy, PolicyDecisionType, WebContext, WebView};
 
 use crate::apps::{get_app_details, AppDetails};
 
-fn format_css(id: &str, bg: &str) -> String {
-    let css = format!(
+fn format_css(id: &str, bg: &str, fg: &str) -> String {
+    format!(
         r#"window#s{id} {{
     background: {bg};
+    color: {fg};
 }}"#
-    );
-    css
+    )
+}
+
+// Source: https://www.w3.org/WAI/GL/wiki/Relative_luminance
+fn luminence(rgba: gdk::RGBA) -> f32 {
+    0.2126 * rgba.red() + 0.7152 * rgba.green() + 0.0722 * rgba.blue()
 }
 
 mod imp {
@@ -113,10 +118,24 @@ mod imp {
             // Add new one if possible
             let provider = self.provider.borrow();
             let provider = provider.as_ref().unwrap();
+            let fg = bg
+                .map(|bg| {
+                    gdk::RGBA::parse(bg)
+                        .map(|rgba| {
+                            if luminence(rgba) > 0.5 {
+                                "black"
+                            } else {
+                                "white"
+                            }
+                        })
+                        .ok()
+                })
+                .flatten();
             provider.load_from_string(
                 format_css(
                     self.details.borrow().id.as_str(),
                     bg.unwrap_or("@window_bg_color"),
+                    fg.unwrap_or("@window_fg_color"),
                 )
                 .as_str(),
             );
