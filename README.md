@@ -10,12 +10,14 @@ Install and integrate web apps into the GNOME desktop!
 
 ## Planned ✔️
 
+- [ ] Website permissions
 - [ ] Get website data via webview
 - [ ] Option to autostart and run apps in background
 - [ ] Domain restriction
 - [ ] More keybinds in web app
-- [ ] Sideloading custom JS and CSS
 - [ ] A better name and app icon
+- [ ] HTTP Proxy settings
+- [ ] Handle pop ups
 
 > ✨ Please let me know if you'd like any more features! ✨
 
