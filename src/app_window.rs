@@ -118,19 +118,17 @@ mod imp {
             // Add new one if possible
             let provider = self.provider.borrow();
             let provider = provider.as_ref().unwrap();
-            let fg = bg
-                .map(|bg| {
-                    gdk::RGBA::parse(bg)
-                        .map(|rgba| {
-                            if luminence(rgba) > 0.5 {
-                                "black"
-                            } else {
-                                "white"
-                            }
-                        })
-                        .ok()
-                })
-                .flatten();
+            let fg = bg.and_then(|bg| {
+                gdk::RGBA::parse(bg)
+                    .map(|rgba| {
+                        if luminence(rgba) > 0.5 {
+                            "black"
+                        } else {
+                            "white"
+                        }
+                    })
+                    .ok()
+            });
             provider.load_from_string(
                 format_css(
                     self.details.borrow().id.as_str(),
@@ -261,31 +259,42 @@ mod imp {
 
             webview.connect_decide_policy(|webview, decision, decision_type| {
                 if decision_type == PolicyDecisionType::NewWindowAction {
-                    let mut action =
-                        decision.property::<webkit::NavigationAction>("navigation-action");
-                    if let Some(uri) = action.request().and_then(|a| a.uri()) {
-                        open::that_detached(uri).unwrap();
+                    if let Some(mut action) = decision
+                        .clone()
+                        .downcast::<webkit::NavigationPolicyDecision>()
+                        .ok()
+                        .and_then(|x| x.navigation_action())
+                    {
+                        if let Some(uri) = action.request().and_then(|a| a.uri()) {
+                            open::that_detached(uri).unwrap();
 
-                        decision.ignore();
-                        return false;
+                            decision.ignore();
+                            return false;
+                        }
                     }
                 }
                 if decision_type == PolicyDecisionType::Response {
-                    let response = decision.property::<webkit::URIResponse>("response");
-                    let headers = response.property::<soup::MessageHeaders>("http-headers");
-                    if headers
-                        .one("Content-Type")
-                        .and_then(|x| {
-                            if webview.can_show_mime_type(x.as_str()) {
-                                Some(())
-                            } else {
-                                None
-                            }
-                        })
-                        .is_none()
+                    if let Some(headers) = decision
+                        .clone()
+                        .downcast::<webkit::ResponsePolicyDecision>()
+                        .ok()
+                        .and_then(|x| x.response())
+                        .and_then(|x| x.http_headers())
                     {
-                        decision.download();
-                        return true;
+                        if headers
+                            .one("Content-Type")
+                            .and_then(|x| {
+                                if webview.can_show_mime_type(x.as_str()) {
+                                    Some(())
+                                } else {
+                                    None
+                                }
+                            })
+                            .is_none()
+                        {
+                            decision.download();
+                            return true;
+                        }
                     }
                 }
                 true
