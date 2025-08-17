@@ -155,7 +155,7 @@ mod imp {
             std::fs::create_dir_all(app_cache_dir.clone()).unwrap();
 
             // Build settings
-            let settings = webkit::Settings::builder()
+            let mut settings = webkit::Settings::builder()
                 .enable_webgl(true)
                 .enable_webrtc(true)
                 .enable_webaudio(true)
@@ -169,8 +169,11 @@ mod imp {
                 .enable_html5_database(true)
                 .enable_hyperlink_auditing(true)
                 .enable_site_specific_quirks(true)
-                .enable_developer_extras(true)
-                .build();
+                .enable_developer_extras(true);
+            if let Some(user_agent) = &details.user_agent {
+                settings = settings.user_agent(user_agent);
+            }
+            let settings = settings.build();
 
             // Build network session
             let network_session = webkit::NetworkSession::builder()

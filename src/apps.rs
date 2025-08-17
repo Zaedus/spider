@@ -35,6 +35,7 @@ pub struct AppDetails {
     pub window_width: i32,
     pub window_height: i32,
     pub window_maximize: bool,
+    pub user_agent: Option<String>,
 }
 
 impl PartialEq for AppDetails {
@@ -44,6 +45,7 @@ impl PartialEq for AppDetails {
             && self.title == other.title
             && self.icon == other.icon
             && self.has_titlebar_color == other.has_titlebar_color
+            && self.user_agent == other.user_agent
     }
 }
 
@@ -58,6 +60,7 @@ impl Default for AppDetails {
             window_width: 400,
             window_height: 400,
             window_maximize: false,
+            user_agent: None,
         }
     }
 }
@@ -72,7 +75,7 @@ impl AppDetails {
         }
     }
     pub fn to_hashmap(&self) -> HashMap<String, String> {
-        let kv_pairs = vec![
+        let mut kv_pairs = vec![
             ("url".to_string(), self.url.clone()),
             ("title".to_string(), self.title.clone()),
             (
@@ -86,6 +89,9 @@ impl AppDetails {
                 self.window_maximize.to_string(),
             ),
         ];
+        if let Some(user_agent) = &self.user_agent {
+            kv_pairs.push(("useragent".to_string(), user_agent.clone()));
+        }
 
         kv_pairs.into_iter().collect()
     }
@@ -170,6 +176,7 @@ pub fn get_app_details(id: &str) -> Option<AppDetails> {
             .get("windowmaximize")
             .and_then(|x| x.parse::<bool>().ok())
             .unwrap_or(false),
+        user_agent: settings.get("useragent").map(|x| x.to_string()),
     })
 }
 

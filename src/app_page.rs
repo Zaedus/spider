@@ -57,6 +57,10 @@ mod imp {
         pub page_menu: TemplateChild<gio::Menu>,
         #[template_child]
         pub titlebar_color: TemplateChild<adw::SwitchRow>,
+        #[template_child]
+        pub user_agent_expander: TemplateChild<adw::ExpanderRow>,
+        #[template_child]
+        pub user_agent_entry: TemplateChild<adw::EntryRow>,
     }
 
     #[glib::object_subclass]
@@ -92,6 +96,10 @@ mod imp {
         }
         #[template_callback]
         fn update_unsaved_details_cb(&self, _: gtk::Widget) {
+            self.update_unsaved_details();
+        }
+        #[template_callback]
+        fn update_unsaved_details_notify_cb(&self, _: glib::ParamSpec) {
             self.update_unsaved_details();
         }
         #[template_callback]
@@ -159,6 +167,10 @@ mod imp {
                 url: self.url_entry.text().to_string(),
                 title: self.title_entry.text().to_string(),
                 has_titlebar_color: self.titlebar_color.is_active(),
+                user_agent: self
+                    .user_agent_expander
+                    .enables_expansion()
+                    .then(|| self.user_agent_entry.text().to_string()),
                 icon,
                 ..details
             };
@@ -210,6 +222,11 @@ mod imp {
             self.title_entry.set_text(details.title.as_str());
             self.url_entry.set_text(details.url.as_str());
             self.titlebar_color.set_active(details.has_titlebar_color);
+            self.user_agent_expander
+                .set_enable_expansion(details.user_agent.is_some());
+            if let Some(user_agent) = &details.user_agent {
+                self.user_agent_entry.set_text(user_agent.as_str());
+            }
 
             self.setup_menu();
         }
