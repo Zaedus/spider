@@ -9,7 +9,8 @@
   </developer>
   <icon type="stock">io.github.zaedus.spider</icon>
   <icon type="remote">
-    https://raw.githubusercontent.com/Zaedus/spider/master/data/icons/hicolor/scalable/apps/io.github.zaedus.spider.svg</icon>
+    https://raw.githubusercontent.com/Zaedus/spider/master/data/icons/hicolor/scalable/apps/io.github.zaedus.spider.svg
+</icon>
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-3.0-only</project_license>
   <content_rating type="oars-1.1" />
@@ -30,9 +31,11 @@
     </p>
     <ul>
       <li><em>Sandboxed:</em> Each web app is completely isolated</li>
-      <li><em>Adaptive Window Styling:</em> Each app's titlebar adapts to it's
+      <li>
+        <em>Adaptive Window Styling:</em> Each app's titlebar adapts to it's
         theme color</li>
-      <li><em>High quality icons:</em> Scrapes websites for a high quality icons
+      <li>
+        <em>High quality icons:</em> Scrapes websites for a high quality icons
         to use</li>
     </ul>
   </description>
@@ -45,15 +48,28 @@
   <screenshots>
     <screenshot type="default">
       <image>
+        https://raw.githubusercontent.com/Zaedus/spider/refs/heads/assets/screenshots/screenshot-01.png
       </image>
       <caption>Spider main window</caption>
     </screenshot>
     <screenshot>
-      <image>https://files.catbox.moe/15af2c.png</image>
+      <image>
+        https://raw.githubusercontent.com/Zaedus/spider/refs/heads/assets/screenshots/screenshot-02.png
+      </image>
       <caption>Spider web app window on Github</caption>
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.0.7" date="2025-08-22">
+      <description>
+        <ul>
+          <li>Improve app window title visibility</li>
+          <li>Custom user agents</li>
+          <li>New icon</li>
+          <li>Small bug fixes</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.0.6" date="2025-04-23">
       <description>
         <ul>

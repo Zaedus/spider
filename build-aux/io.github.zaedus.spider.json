@@ -1,9 +1,11 @@
 {
   "id": "io.github.zaedus.spider",
   "runtime": "org.gnome.Platform",
-  "runtime-version": "47",
+  "runtime-version": "48",
   "sdk": "org.gnome.Sdk",
-  "sdk-extensions": ["org.freedesktop.Sdk.Extension.rust-stable"],
+  "sdk-extensions": [
+    "org.freedesktop.Sdk.Extension.rust-stable"
+  ],
   "command": "spider",
   "finish-args": [
     "--share=network",
@@ -35,12 +37,14 @@
     {
       "name": "blueprint-compiler",
       "buildsystem": "meson",
-      "cleanup": ["*"],
+      "cleanup": [
+        "*"
+      ],
       "sources": [
         {
           "type": "git",
           "url": "https://gitlab.gnome.org/jwestman/blueprint-compiler",
-          "tag": "v0.12.0"
+          "tag": "v0.18.0"
         }
       ]
     },
@@ -53,12 +57,14 @@
           "CARGO_HOME": "/run/build/spider/cargo"
         }
       },
-      "config-opts": ["-Dflatpak=true"],
+      "config-opts": [
+        "-Dflatpak=true"
+      ],
       "sources": [
         {
           "type": "git",
           "url": "https://github.com/Zaedus/spider.git",
-          "commit": "v0.0.6"
+          "commit": "v0.0.7"
         },
         "generated-sources.json"
       ]
