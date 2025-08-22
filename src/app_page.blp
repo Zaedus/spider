@@ -101,7 +101,7 @@ template $AppPage: Adw.NavigationPage {
             Adw.ExpanderRow user_agent_expander {
               show-enable-switch: true;
               expanded: bind user_agent_expander.enable-expansion;
-              title: "Enable User Agent";
+              title: "Custom User Agent";
               notify => $update_unsaved_details_notify_cb() swapped;
 
               Adw.EntryRow user_agent_entry {
