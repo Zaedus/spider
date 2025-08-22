@@ -1,6 +1,20 @@
-# Spider 🕷️
+<br />
+<div align="center">
+  <a href="#">
+    <img src="data/icons/hicolor/scalable/apps/io.github.zaedus.spider.svg" alt="Logo" height="120" alt="Spider Icon">
+  </a>
 
-Install and integrate web apps into the GNOME desktop!
+  <h1 align="center">Spider</h1>
+
+  <h3 align="center">
+    Install web apps with ease
+  </h3>
+
+  <img src="https://raw.githubusercontent.com/Zaedus/spider/refs/heads/assets/screenshots/screenshot-01.png" alt="Spider Screenshot">
+  <i>Special thanks to <a href="https://github.com/oiimrosabel">oiimrosabel</a> for the icon!</i>
+</div>
+
+
 
 ## Features ✨
 
@@ -44,8 +58,9 @@ Then to compile, run
 ninja install -C target/
 ```
 
-## Thanks to these awesome projects! ❤️
+## Thanks to these awesome people and projects! ❤️
 
+- [oiimrosabel](https://github.com/oiimrosabel) (the awesome icon!)
 - [jbenner-radham/rust-gtk4-css-styling](https://github.com/jbenner-radham/rust-gtk4-css-styling) (per-theme custom css)
 - [gtk-rs/gtk4-rs](https://github.com/gtk-rs/gtk4-rs) (obviously lol)
 - [eyekay/webapps](https://codeberg.org/eyekay/webapps) (the idea)
