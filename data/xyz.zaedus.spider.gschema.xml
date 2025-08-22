@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<schemalist gettext-domain="spider">
-	<schema id="xyz.zaedus.spider" path="/xyz/zaedus/spider/">
-	</schema>
-</schemalist>
