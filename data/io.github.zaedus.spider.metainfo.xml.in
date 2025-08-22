@@ -20,8 +20,8 @@
     <control>touch</control>
   </supports>
   <branding>
-    <color type="primary" scheme_preference="light">#c8c8c8</color>
-    <color type="primary" scheme_preference="dark">#b48282</color>
+    <color type="primary" scheme_preference="light">#c084fc</color>
+    <color type="primary" scheme_preference="dark">#6b21a8</color>
   </branding>
   <description>
     <p>
