@@ -30,7 +30,6 @@
 - [ ] Option to autostart and run apps in background
 - [ ] Domain restriction
 - [ ] More keybinds in web app
-- [ ] A better name and app icon
 - [ ] HTTP Proxy settings
 - [ ] Handle pop ups
 
