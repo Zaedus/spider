@@ -64,7 +64,7 @@
         {
           "type": "git",
           "url": "https://github.com/Zaedus/spider.git",
-          "commit": "v0.0.7"
+          "commit": "v0.0.8"
         },
         "generated-sources.json"
       ]
