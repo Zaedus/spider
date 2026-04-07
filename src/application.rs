@@ -48,6 +48,7 @@ mod imp {
             obj.set_accels_for_action("app.quit", &["<primary>q"]);
             obj.set_accels_for_action("win.back", &["<alt>Left", "Back"]);
             obj.set_accels_for_action("win.forward", &["<alt>Right", "Forward"]);
+            obj.set_accels_for_action("win.toggle-titlebar", &["F11"]);
         }
     }
 
