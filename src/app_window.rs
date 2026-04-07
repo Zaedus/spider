@@ -395,6 +395,12 @@ impl AppWindow {
             gio::ActionEntry::builder("back")
                 .activate(move |win: &Self, _, _| win.imp().go_back())
                 .build(),
+            gio::ActionEntry::builder("toggle-titlebar")
+                .activate(move |win: &Self, _, _| {
+                    let toolbar = &win.imp().toolbar;
+                    toolbar.set_reveal_top_bars(!toolbar.reveals_top_bars());
+                })
+                .build(),
         ]);
     }
     fn setup_gestures(&self) {
