@@ -100,6 +100,7 @@ mod imp {
             self.webview_container.set_child(Some(&webview));
             self.webview.replace(webview);
 
+            self.toolbar.set_reveal_top_bars(!details.hide_titlebar);
             self.load_colors(None);
         }
 

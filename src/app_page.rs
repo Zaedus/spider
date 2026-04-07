@@ -58,6 +58,8 @@ mod imp {
         #[template_child]
         pub titlebar_color: TemplateChild<adw::SwitchRow>,
         #[template_child]
+        pub hide_titlebar: TemplateChild<adw::SwitchRow>,
+        #[template_child]
         pub user_agent_expander: TemplateChild<adw::ExpanderRow>,
         #[template_child]
         pub user_agent_entry: TemplateChild<adw::EntryRow>,
@@ -167,6 +169,7 @@ mod imp {
                 url: self.url_entry.text().to_string(),
                 title: self.title_entry.text().to_string(),
                 has_titlebar_color: self.titlebar_color.is_active(),
+                hide_titlebar: self.hide_titlebar.is_active(),
                 user_agent: self
                     .user_agent_expander
                     .enables_expansion()
@@ -222,6 +225,7 @@ mod imp {
             self.title_entry.set_text(details.title.as_str());
             self.url_entry.set_text(details.url.as_str());
             self.titlebar_color.set_active(details.has_titlebar_color);
+            self.hide_titlebar.set_active(details.hide_titlebar);
             self.user_agent_expander
                 .set_enable_expansion(details.user_agent.is_some());
             if let Some(user_agent) = &details.user_agent {
@@ -247,6 +251,13 @@ mod imp {
         }
         fn setup_signals(&self) {
             self.titlebar_color.connect_active_notify(clone!(
+                #[weak(rename_to=_self)]
+                self,
+                move |_| {
+                    _self.update_unsaved_details();
+                }
+            ));
+            self.hide_titlebar.connect_active_notify(clone!(
                 #[weak(rename_to=_self)]
                 self,
                 move |_| {

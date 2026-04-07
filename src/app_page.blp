@@ -93,6 +93,12 @@ template $AppPage: Adw.NavigationPage {
               subtitle: "Toggles the usage of the page's theme color in the titlebar";
               activated => $update_unsaved_details_cb() swapped;
             }
+
+            Adw.SwitchRow hide_titlebar {
+              title: "Hide Titlebar";
+              subtitle: "Hides the navigation bar when viewing the web app";
+              activated => $update_unsaved_details_cb() swapped;
+            }
           }
           Adw.PreferencesGroup {
             title: "Browser Behavior";

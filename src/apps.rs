@@ -32,6 +32,7 @@ pub struct AppDetails {
     pub title: String,
     pub icon: Option<Vec<u8>>,
     pub has_titlebar_color: bool,
+    pub hide_titlebar: bool,
     pub window_width: i32,
     pub window_height: i32,
     pub window_maximize: bool,
@@ -45,6 +46,7 @@ impl PartialEq for AppDetails {
             && self.title == other.title
             && self.icon == other.icon
             && self.has_titlebar_color == other.has_titlebar_color
+            && self.hide_titlebar == other.hide_titlebar
             && self.user_agent == other.user_agent
     }
 }
@@ -56,6 +58,7 @@ impl Default for AppDetails {
             url: "".into(),
             title: "".into(),
             has_titlebar_color: true,
+            hide_titlebar: false,
             icon: None,
             window_width: 400,
             window_height: 400,
@@ -81,6 +84,10 @@ impl AppDetails {
             (
                 "hastitlebarcolor".to_string(),
                 self.has_titlebar_color.to_string(),
+            ),
+            (
+                "hidetitlebar".to_string(),
+                self.hide_titlebar.to_string(),
             ),
             ("windowwidth".to_string(), self.window_width.to_string()),
             ("windowheight".to_string(), self.window_height.to_string()),
@@ -163,6 +170,9 @@ pub fn get_app_details(id: &str) -> Option<AppDetails> {
         has_titlebar_color: settings
             .get("hastitlebarcolor")
             .is_none_or(|x| x != "false"),
+        hide_titlebar: settings
+            .get("hidetitlebar")
+            .is_some_and(|x| x == "true"),
         icon: None,
         window_width: settings
             .get("windowwidth")
