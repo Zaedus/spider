@@ -40,6 +40,8 @@
     </ul>
   </description>
   <url type="homepage">https://github.com/Zaedus/spider</url>
+  <url type="bugtracker">https://github.com/Zaedus/spider/issues</url>
+  <url type="vcs-browser">https://github.com/Zaedus/spider</url>
   <categories>
     <category>Network</category>
     <category>WebBrowser</category>
