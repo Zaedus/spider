@@ -77,7 +77,7 @@ mod imp {
         #[template_child]
         pub background_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
-        pub permissions_expander: TemplateChild<adw::ExpanderRow>,
+        pub permissions_group: TemplateChild<adw::PreferencesGroup>,
 
         // Dynamically built permission summary rows
         permission_rows: RefCell<Vec<gtk::Widget>>,
@@ -392,7 +392,7 @@ mod imp {
         fn setup_permissions(&self) {
             // Clear previous rows
             for row in self.permission_rows.borrow_mut().drain(..) {
-                self.permissions_expander.remove(&row);
+                self.permissions_group.remove(&row);
             }
 
             let id = self.details.borrow().id.clone();
@@ -403,7 +403,7 @@ mod imp {
                 let row = adw::ActionRow::new();
                 row.set_title("No permissions requested");
                 row.set_sensitive(false);
-                self.permissions_expander.add_row(&row);
+                self.permissions_group.add(&row);
                 rows.push(row.upcast());
                 return;
             }
@@ -443,7 +443,7 @@ mod imp {
                 ));
 
                 row.add_suffix(&revoke_button);
-                self.permissions_expander.add_row(&row);
+                self.permissions_group.add(&row);
                 rows.push(row.upcast());
             }
         }
