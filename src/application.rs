@@ -190,6 +190,20 @@ impl SpiderApplication {
     }
 
     fn open_app(&self, id: &str) -> anyhow::Result<()> {
+        // Clicked notifications land in the process that showed them, so
+        // present an already-running window directly instead of spawning
+        // another instance
+        if let Some(win) = self
+            .windows()
+            .into_iter()
+            .find_map(|win| win.downcast::<AppWindow>().ok())
+            .filter(|win| win.id() == id)
+        {
+            win.activate_pending_notifications();
+            win.present();
+            return Ok(());
+        }
+
         Command::new("spider").arg(id).spawn()?;
         Ok(())
     }

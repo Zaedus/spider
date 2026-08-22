@@ -15,6 +15,11 @@ use crate::apps::{
     self, get_app_details, get_app_permission, permission_label, set_app_permission, AppDetails,
 };
 
+/// Stock Linux Chromium agent. WebKitGTK's own default claims to be
+/// Safari on macOS, which sites like WhatsApp Web reject ("browser not
+/// supported") and gate calling behind.
+const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
 fn format_css(id: &str, bg: &str, fg: &str) -> String {
     format!(
         r#"window#s{id} {{
@@ -125,6 +130,8 @@ mod imp {
         pub details: RefCell<AppDetails>,
         pub webview: RefCell<webkit::WebView>,
         pub provider: RefCell<Option<gtk::CssProvider>>,
+        // Web notifications awaiting a click on their desktop twin
+        pub pending_notifications: RefCell<Vec<webkit::Notification>>,
     }
 
     #[glib::object_subclass]
@@ -260,6 +267,8 @@ mod imp {
                 .enable_developer_extras(true);
             if let Some(user_agent) = &details.user_agent {
                 settings = settings.user_agent(user_agent);
+            } else {
+                settings = settings.user_agent(DEFAULT_USER_AGENT);
             }
             let settings = settings.build();
 
@@ -416,6 +425,39 @@ mod imp {
                 });
             }
 
+            // Forward page notifications to the notification daemon;
+            // activating one presents this window and replays the click
+            // into the page
+            {
+                let id = details.id.clone();
+                let parent = self.obj().downgrade();
+                webview.connect_show_notification(move |_, notification| {
+                    let Some(window) = parent.upgrade() else {
+                        return false;
+                    };
+                    let Some(application) = window.application() else {
+                        return false;
+                    };
+
+                    let desktop =
+                        gio::Notification::new(&notification.title().unwrap_or_default());
+                    desktop.set_body(Some(&notification.body().unwrap_or_default()));
+                    desktop.set_default_action_and_target_value(
+                        "app.open-app",
+                        Some(&id.to_variant()),
+                    );
+                    application.send_notification(None, &desktop);
+
+                    let mut pending = window.imp().pending_notifications.borrow_mut();
+                    if pending.len() > 8 {
+                        pending.remove(0);
+                    }
+                    pending.push(notification.clone());
+
+                    true
+                });
+            }
+
             webview.connect_estimated_load_progress_notify(clone!(
                 #[weak(rename_to=_self)]
                 self,
@@ -500,6 +542,13 @@ impl AppWindow {
 
     pub fn id(&self) -> String {
         self.imp().details.borrow().id.clone()
+    }
+
+    /// Replays clicks on activated desktop notifications into the page.
+    pub fn activate_pending_notifications(&self) {
+        for notification in self.imp().pending_notifications.borrow_mut().drain(..) {
+            notification.clicked();
+        }
     }
 
     fn setup_gactions(&self) {
