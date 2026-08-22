@@ -42,6 +42,11 @@
   release builds). Camera/mic *capture* works, but peer-to-peer calls will report the
   browser as unsupported until your distribution ships WebKitGTK with
   `-DENABLE_WEB_RTC=ON`. This is an engine limitation, not a Spider setting.
+- The Flatpak manifest bundles its own WebKitGTK built with `-DENABLE_WEB_RTC=ON`,
+  so WebRTC works in the packaged app. Native (distro) builds follow whatever
+  your distribution ships. Once runtimes/distros enable WebRTC upstream
+  ([libwebrtc migration](https://github.com/WebKit/WebKit/pull/69116)), the bundled
+  module can be dropped again.
 
 ## Building 🛠️
 
