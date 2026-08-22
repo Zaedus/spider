@@ -160,6 +160,24 @@ template $AppPage: Adw.NavigationPage {
               subtitle: "Closing the window keeps the app running";
               activated => $update_unsaved_details_cb() swapped;
             }
+
+            Adw.ActionRow kill_row {
+              title: "Kill App Process";
+              subtitle: "Force stop the running instance";
+              visible: false;
+
+              Button {
+                icon-name: "system-shutdown-symbolic";
+                valign: center;
+
+                styles [
+                  "flat",
+                  "destructive-action"
+                ]
+
+                clicked => $on_kill_clicked() swapped;
+              }
+            }
           }
 
           Adw.PreferencesGroup permissions_group {

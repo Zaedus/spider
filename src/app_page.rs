@@ -77,6 +77,8 @@ mod imp {
         #[template_child]
         pub background_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
+        pub kill_row: TemplateChild<adw::ActionRow>,
+        #[template_child]
         pub permissions_group: TemplateChild<adw::PreferencesGroup>,
 
         // Dynamically built permission summary rows
@@ -146,6 +148,16 @@ mod imp {
                     self.toast(err.to_string())
                 }
             }
+        }
+        #[template_callback]
+        fn on_kill_clicked(&self, _: gtk::Button) {
+            let id = self.details.borrow().id.clone();
+            let killed = apps::kill_app_processes(&id);
+            self.toast(if killed > 0 {
+                format!("Stopped {killed} running process(es)")
+            } else {
+                "App is not running".to_string()
+            });
         }
     }
 
@@ -358,6 +370,7 @@ mod imp {
                 #[weak(rename_to=_self)]
                 self,
                 move |_| {
+                    _self.kill_row.set_visible(_self.background_row.is_active());
                     _self.update_unsaved_details();
                 }
             ));

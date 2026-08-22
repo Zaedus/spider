@@ -286,8 +286,43 @@ fn autostart_desktop_path(id: &str) -> PathBuf {
 /// The generated desktop file reuses the `Icon=` line from the launcher's
 /// own desktop file when it can be found so the autostart entry shows the
 /// same icon as the installed app.
-pub fn set_app_autostart(details: &AppDetails, enabled: bool) -> anyhow::Result<()> {
-    let path = autostart_desktop_path(&details.id);
+/// Terminates every running process of an app (a `spider <id>` process),
+/// excluding this one. Returns how many processes were signalled.
+pub fn kill_app_processes(id: &str) -> usize {
+    let mut killed = 0;
+    let Ok(entries) = std::fs::read_dir("/proc") else {
+        return 0;
+    };
+    for entry in entries.flatten() {
+        let Some(pid) = entry
+            .file_name()
+            .to_str()
+            .and_then(|name| name.parse::<u32>().ok())
+        else {
+            continue;
+        };
+        if pid == std::process::id() {
+            continue;
+        }
+        let Ok(cmdline) = std::fs::read_to_string(entry.path().join("cmdline")) else {
+            continue;
+        };
+        let mut args = cmdline.split_terminator('\0').filter(|s| !s.is_empty());
+        let exe = args.next().unwrap_or_default();
+        if exe.rsplit('/').next() == Some("spider")
+            && args.any(|arg| arg == id)
+            && std::process::Command::new("kill")
+                .arg(pid.to_string())
+                .status()
+                .is_ok()
+        {
+            killed += 1;
+        }
+    }
+    killed
+}
+
+pub fn set_app_autostart(details: &AppDetails, enabled: bool) -> anyhow::Result<()> {    let path = autostart_desktop_path(&details.id);
     if !enabled {
         if path.exists() {
             std::fs::remove_file(path)?;
