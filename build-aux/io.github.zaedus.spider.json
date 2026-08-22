@@ -3,7 +3,9 @@
   "runtime": "org.gnome.Platform",
   "runtime-version": "50",
   "sdk": "org.gnome.Sdk",
-  "sdk-extensions": ["org.freedesktop.Sdk.Extension.rust-stable"],
+  "sdk-extensions": [
+    "org.freedesktop.Sdk.Extension.rust-stable"
+  ],
   "command": "spider",
   "finish-args": [
     "--share=network",
@@ -22,6 +24,22 @@
   },
   "modules": [
     {
+      "name": "unifdef",
+      "buildsystem": "simple",
+      "build-commands": [
+        "printf '#define UNIFDEF_VERSION \"unifdef-2.12\"\\n' > version.h",
+        "cc -std=gnu17 -O2 -I. -o unifdef unifdef.c",
+        "install -Dm0755 unifdef /app/bin/unifdef"
+      ],
+      "sources": [
+        {
+          "type": "archive",
+          "url": "https://github.com/fanf2/unifdef/archive/refs/tags/unifdef-2.12.tar.gz",
+          "sha256": "030369db9ff917acfae7fa4e90bcc1dff8a8dc534d82d1c72c12ef698d2f20e4"
+        }
+      ]
+    },
+    {
       "name": "webkitgtk",
       "buildsystem": "cmake-ninja",
       "builddir": true,
@@ -34,7 +52,8 @@
         "-DENABLE_MINIBROWSER=OFF",
         "-DENABLE_WEBDRIVER=OFF",
         "-DENABLE_INTROSPECTION=OFF",
-        "-DUSE_LIBBACKTRACE=OFF"
+        "-DUSE_LIBBACKTRACE=OFF",
+        "-DENABLE_SPEECH_SYNTHESIS=OFF"
       ],
       "cleanup": [
         "/include",
@@ -60,7 +79,9 @@
           "CARGO_HOME": "/run/build/spider/cargo"
         }
       },
-      "config-opts": ["-Dflatpak=true"],
+      "config-opts": [
+        "-Dflatpak=true"
+      ],
       "sources": [
         {
           "type": "git",
