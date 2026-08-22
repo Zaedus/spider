@@ -8,6 +8,7 @@ use std::cell::RefCell;
 use ashpd::WindowIdentifier;
 
 use crate::apps::{self, AppDetails};
+use crate::application;
 use crate::util;
 
 fn menu_item_and_target(label: &str, action_name: &str, action_target: &str) -> gio::MenuItem {
@@ -63,6 +64,26 @@ mod imp {
         pub user_agent_expander: TemplateChild<adw::ExpanderRow>,
         #[template_child]
         pub user_agent_entry: TemplateChild<adw::EntryRow>,
+        #[template_child]
+        pub domain_restriction_expander: TemplateChild<adw::ExpanderRow>,
+        #[template_child]
+        pub domains_entry: TemplateChild<adw::EntryRow>,
+        #[template_child]
+        pub proxy_expander: TemplateChild<adw::ExpanderRow>,
+        #[template_child]
+        pub proxy_entry: TemplateChild<adw::EntryRow>,
+        #[template_child]
+        pub autostart_row: TemplateChild<adw::SwitchRow>,
+        #[template_child]
+        pub background_row: TemplateChild<adw::SwitchRow>,
+        #[template_child]
+        pub permissions_expander: TemplateChild<adw::ExpanderRow>,
+
+        // Dynamically built permission summary rows
+        permission_rows: RefCell<Vec<gtk::Widget>>,
+
+        // gsettings "apps-settings" change handler, disconnected on dispose
+        settings_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -85,6 +106,12 @@ mod imp {
             self.parent_constructed();
 
             self.setup_signals();
+        }
+
+        fn dispose(&self) {
+            if let Some(handler) = self.settings_handler.borrow_mut().take() {
+                application::settings().disconnect(handler);
+            }
         }
     }
     impl WidgetImpl for AppPage {}
@@ -173,6 +200,24 @@ mod imp {
                     .user_agent_expander
                     .enables_expansion()
                     .then(|| self.user_agent_entry.text().to_string()),
+                allowed_domains: self
+                    .domain_restriction_expander
+                    .enables_expansion()
+                    .then(|| {
+                        self.domains_entry
+                            .text()
+                            .split(',')
+                            .map(|d| d.trim().to_lowercase())
+                            .filter(|d| !d.is_empty())
+                            .collect::<Vec<String>>()
+                    }),
+                proxy_url: self
+                    .proxy_expander
+                    .enables_expansion()
+                    .then(|| self.proxy_entry.text().to_string())
+                    .filter(|x| !x.is_empty()),
+                autostart: self.autostart_row.is_active(),
+                run_in_background: self.background_row.is_active(),
                 icon,
                 ..details
             };
@@ -207,6 +252,9 @@ mod imp {
                     }
                     _ => (),
                 }
+                // Keep the XDG autostart entry in sync with the saved
+                // setting (creating/removing it is idempotent)
+                apps::set_app_autostart(&unsaved_details, unsaved_details.autostart)?;
                 self.set_details(&unsaved_details);
             }
             self.update_unsaved_details();
@@ -240,8 +288,38 @@ mod imp {
             if let Some(user_agent) = &details.user_agent {
                 self.user_agent_entry.set_text(user_agent.as_str());
             }
+            self.domain_restriction_expander
+                .set_enable_expansion(details.allowed_domains.is_some());
+            if let Some(domains) = &details.allowed_domains {
+                self.domains_entry.set_text(domains.join(", ").as_str());
+            }
+            self.proxy_expander
+                .set_enable_expansion(details.proxy_url.is_some());
+            if let Some(proxy_url) = &details.proxy_url {
+                self.proxy_entry.set_text(proxy_url.as_str());
+            }
+            self.autostart_row.set_active(details.autostart);
+            self.background_row.set_active(details.run_in_background);
 
             self.setup_menu();
+            self.setup_permissions();
+
+            // Keep the permissions list live: decisions are saved by the
+            // app's own window process, so rebuild whenever the underlying
+            // settings change.
+            if self.settings_handler.borrow().is_none() {
+                let handler = application::settings().connect_changed(
+                    Some("apps-settings"),
+                    clone!(
+                        #[weak(rename_to=_self)]
+                        self,
+                        move |_, _| {
+                            _self.setup_permissions();
+                        }
+                    ),
+                );
+                *self.settings_handler.borrow_mut() = Some(handler);
+            }
         }
         async fn set_unsaved_icon(&self, file: &gio::File) -> anyhow::Result<()> {
             let (buffer, _etag) = file.load_contents_future().await?;
@@ -267,6 +345,107 @@ mod imp {
                     _self.update_unsaved_details();
                 }
             ));
+            // Toggling a switch doesn't emit "activated", so listen for
+            // the active property instead
+            self.autostart_row.connect_active_notify(clone!(
+                #[weak(rename_to=_self)]
+                self,
+                move |_| {
+                    _self.update_unsaved_details();
+                }
+            ));
+            self.background_row.connect_active_notify(clone!(
+                #[weak(rename_to=_self)]
+                self,
+                move |_| {
+                    _self.update_unsaved_details();
+                }
+            ));
+            // The enable-switch of the expanders likewise needs
+            // notify::enable-expansion to mark unsaved changes
+            self.user_agent_expander
+                .connect_enable_expansion_notify(clone!(
+                    #[weak(rename_to=_self)]
+                    self,
+                    move |_| {
+                        _self.update_unsaved_details();
+                    }
+                ));
+            self.domain_restriction_expander
+                .connect_enable_expansion_notify(clone!(
+                    #[weak(rename_to=_self)]
+                    self,
+                    move |_| {
+                        _self.update_unsaved_details();
+                    }
+                ));
+            self.proxy_expander.connect_enable_expansion_notify(clone!(
+                #[weak(rename_to=_self)]
+                self,
+                move |_| {
+                    _self.update_unsaved_details();
+                }
+            ));
+        }
+        /// Rebuilds the "Website Permissions" list: one row per origin
+        /// that has saved decisions, each with a button to revoke them.
+        fn setup_permissions(&self) {
+            // Clear previous rows
+            for row in self.permission_rows.borrow_mut().drain(..) {
+                self.permissions_expander.remove(&row);
+            }
+
+            let id = self.details.borrow().id.clone();
+            let summaries = apps::get_permission_summaries(&id);
+
+            let mut rows = self.permission_rows.borrow_mut();
+            if summaries.is_empty() {
+                let row = adw::ActionRow::new();
+                row.set_title("No permissions requested");
+                row.set_sensitive(false);
+                self.permissions_expander.add_row(&row);
+                rows.push(row.upcast());
+                return;
+            }
+
+            for (origin, kinds) in summaries {
+                let row = adw::ActionRow::new();
+                row.set_title(origin.as_str());
+                row.set_subtitle(
+                    &kinds
+                        .iter()
+                        .map(|kind| apps::permission_label(kind))
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                );
+
+                let revoke_button = gtk::Button::builder()
+                    .icon_name("user-trash-symbolic")
+                    .tooltip_text("Revoke all access")
+                    .valign(gtk::Align::Center)
+                    .css_classes(["flat", "destructive-action"])
+                    .build();
+                revoke_button.connect_clicked(clone!(
+                    #[weak(rename_to=_self)]
+                    self,
+                    #[weak]
+                    row,
+                    move |_| {
+                        let id = _self.details.borrow().id.clone();
+                        let origin = row.title().to_string();
+                        if let Err(err) = apps::clear_origin_permissions(&id, &origin) {
+                            _self.toast(err.to_string());
+                            return;
+                        }
+                        _self.toast(format!("Revoked access for {origin}"));
+                        _self.setup_permissions();
+                    }
+                ));
+
+                row.add_suffix(&revoke_button);
+                self.permissions_expander.add_row(&row);
+                rows.push(row.upcast());
+            }
         }
     }
 }

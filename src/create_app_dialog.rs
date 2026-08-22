@@ -100,7 +100,14 @@ mod imp {
                 self.url_entry.set_text(url.as_str());
                 self.url_entry.set_show_apply_button(true);
 
-                match util::get_website_meta(url).await {
+                // Prefer rendering the page in a hidden webview (sees
+                // JS-driven titles/icons, bypasses bot-blocking); fall
+                // back to a plain HTTP scrape.
+                let meta = match util::get_website_meta_via_webview(url.clone()).await {
+                    Ok(meta) => Ok(meta),
+                    Err(_) => util::get_website_meta(url).await,
+                };
+                match meta {
                     Ok(meta) => {
                         self.title_entry
                             .set_text(meta.title.unwrap_or_default().as_str());

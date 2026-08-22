@@ -48,6 +48,14 @@ mod imp {
             obj.set_accels_for_action("app.quit", &["<primary>q"]);
             obj.set_accels_for_action("win.back", &["<alt>Left", "Back"]);
             obj.set_accels_for_action("win.forward", &["<alt>Right", "Forward"]);
+            // Web app keybinds
+            obj.set_accels_for_action("win.reload", &["<primary>r", "F5"]);
+            obj.set_accels_for_action("win.reload-bypass-cache", &["<primary><shift>r"]);
+            obj.set_accels_for_action("win.stop", &["Escape"]);
+            obj.set_accels_for_action("win.zoom-in", &["<primary>plus", "<primary>equal"]);
+            obj.set_accels_for_action("win.zoom-out", &["<primary>minus"]);
+            obj.set_accels_for_action("win.zoom-reset", &["<primary>0"]);
+            obj.set_accels_for_action("win.go-home", &["<alt>Home"]);
         }
     }
 
@@ -74,17 +82,35 @@ mod imp {
                 return glib::ExitCode::SUCCESS;
             }
 
-            // Get or create window to present
+            // Get or create window to present. Since every app id is its
+            // own single instance, launching an app that's already running
+            // (possibly hidden in the background) re-presents its window.
             let window: gtk::Window = if let Some(id) = command_line.arguments().get(1) {
                 match get_app_details(&id.to_string_lossy())
                     .ok_or(anyhow!("No app with id {:?}", id))
                 {
-                    Ok(details) => AppWindow::new(&self.obj().clone(), &details).upcast(),
+                    Ok(details) => {
+                        let existing = application
+                            .windows()
+                            .into_iter()
+                            .find_map(|win| win.downcast::<AppWindow>().ok())
+                            .filter(|win| win.id() == details.id);
+                        match existing {
+                            Some(win) => win.upcast(),
+                            None => AppWindow::new(&self.obj().clone(), &details).upcast(),
+                        }
+                    }
                     Err(err) => {
                         eprintln!("Error: {err}");
                         return glib::ExitCode::FAILURE;
                     }
                 }
+            } else if let Some(win) = application
+                .windows()
+                .into_iter()
+                .find_map(|win| win.downcast::<SpiderWindow>().ok())
+            {
+                win.upcast()
             } else {
                 SpiderWindow::new(&*application).upcast()
             };

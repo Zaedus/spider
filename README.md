@@ -22,21 +22,26 @@
 - [x] **Adaptive window styling**: Each app's titlebar adapts to it's [theme color](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta/name/theme-color)
 - [x] **High quality favicons**: Scrapes websites for a high quality favicon to use
 - [x] **Custom user agents**: Lets you set the app's [user agent](https://en.wikipedia.org/wiki/User_agent) if a website isn't behaving
-
-## Planned ✔️
-
-- [ ] Website permissions
-- [ ] Get website data via webview
-- [ ] Option to autostart and run apps in background
-- [ ] Domain restriction
-- [ ] More keybinds in web app
-- [ ] HTTP Proxy settings
-- [ ] Handle pop ups
+- [x] **Website permissions**: Camera, microphone, location and notification prompts are remembered per site and can be revoked anytime from the app's settings page
+- [x] **Website data via webview**: App metadata is fetched by rendering the site in a hidden webview, so JS-driven titles/icons work too
+- [x] **Autostart & background**: Apps can launch at login and keep running when their window is closed (relaunching re-presents the running window)
+- [x] **Domain restriction**: Optionally lock an app to its own domains; everything else opens in the system browser
+- [x] **More keybinds**: Reload (<Ctrl>R/F5), force reload (<Ctrl><Shift>R), stop (Esc), zoom (<Ctrl>+/-/0) and start page (<Alt>Home)
+- [x] **HTTP proxy settings**: Per-app proxy configuration
+- [x] **Pop up handling**: `window.open` pop ups open in a small window sharing the app's session
 
 > ✨ Please let me know if you'd like any more features! ✨
 
 > DO NOT BE AFRIAD TO SUBMIT BUGS!
 > I know there is lots of web functionality that you might be missing
+
+### Known limitations ⚠️
+
+- **WebRTC calls** (e.g. WhatsApp/Meet calls) need `RTCPeerConnection`, which most distros
+  compile out of WebKitGTK (`ENABLE_WEB_RTC` is an experimental feature, off by default in
+  release builds). Camera/mic *capture* works, but peer-to-peer calls will report the
+  browser as unsupported until your distribution ships WebKitGTK with
+  `-DENABLE_WEB_RTC=ON`. This is an engine limitation, not a Spider setting.
 
 ## Building 🛠️
 

@@ -1,12 +1,14 @@
 use anyhow::bail;
 use anyhow::{anyhow, Result};
 use futures::future::join_all;
-use gtk::{gdk, gio, prelude::*};
+use gtk::{gdk, gio, glib, prelude::*};
 use isahc::{config, prelude::*};
 use lazy_static::lazy_static;
 use scraper::{Html, Selector};
 use std::collections::HashSet;
 use url::Url;
+
+use webkit::prelude::WebViewExt;
 
 #[derive(Debug)]
 pub struct WebsiteMeta {
@@ -206,7 +208,7 @@ async fn get_image_metadata(url: Url) -> Result<Image> {
     let is_svg = content_type.as_deref() == Some("image/svg+xml")
         || url
             .path_segments()
-            .and_then(|x| x.last())
+            .and_then(|mut x| x.next_back())
             .is_some_and(|name| name.to_ascii_lowercase().ends_with(".svg"));
     if let Some(ct) = content_type.as_deref() {
         if !is_svg && !ct.starts_with("image/") {
@@ -263,6 +265,130 @@ pub async fn get_website_meta(url: Url) -> Result<WebsiteMeta> {
         icon: best_image.cloned(),
         title,
     })
+}
+
+/// How long to wait for a page to load in the hidden metadata webview
+const WEBVIEW_META_TIMEOUT_SECS: u32 = 20;
+
+/// Extracts website data (title + favicon candidates) by rendering the page
+/// in an offscreen ephemeral WebKitWebView and running JavaScript on it.
+///
+/// Unlike [`get_website_meta`], this sees the page exactly like the browser
+/// will: JS-rendered titles/icons are picked up and responses that block
+/// non-browser clients still succeed.
+pub async fn get_website_meta_via_webview(url: Url) -> Result<WebsiteMeta> {
+    let uri = url.to_string();
+
+    let context = webkit::WebContext::new();
+    let session = webkit::NetworkSession::new_ephemeral();
+    let settings = webkit::Settings::builder()
+        .enable_javascript_markup(true)
+        .media_playback_requires_user_gesture(true)
+        .enable_html5_database(false)
+        .enable_html5_local_storage(false)
+        .build();
+    let webview = webkit::WebView::builder()
+        .web_context(&context)
+        .network_session(&session)
+        .settings(&settings)
+        .user_content_manager(&webkit::UserContentManager::new())
+        .build();
+
+    let (sender, receiver) = async_channel::bounded::<Result<WebsiteMeta>>(1);
+
+    // Collects everything in one pass. Icon hrefs are absolute since
+    // `link.href` resolves them against the document. Tab/newline are
+    // stripped so the result can be parsed line-by-line.
+    const EXTRACT_SCRIPT: &str = r#"
+(() => {
+  const lines = [];
+  lines.push(`T\t${(document.title || "").replace(/[\t\r\n]/g, " ")}`);
+  for (const link of document.querySelectorAll(
+    "link[rel~='icon'], link[rel='shortcut icon'], link[rel='apple-touch-icon']"
+  )) {
+    if (!link.href) continue;
+    let size = 0;
+    const sizes = (link.sizes && link.sizes.value) || "";
+    for (const match of sizes.matchAll(/(\d+)x\d+/g)) {
+      size = Math.max(size, parseInt(match[1]));
+    }
+    if (!Number.isFinite(size)) size = 0;
+    lines.push(`I\t${size}\t${link.href}`);
+  }
+  return lines.join("\n");
+})()
+"#;
+
+    webview.connect_load_changed(move |webview, event| {
+        if event != webkit::LoadEvent::Finished {
+            return;
+        }
+        let webview = webview.clone();
+        let sender = sender.clone();
+        let url = url.clone();
+        glib::spawn_future_local(async move {
+            let result = match webview
+                .evaluate_javascript_future(EXTRACT_SCRIPT, None, None)
+                .await
+            {
+                Ok(value) => {
+                    let text = value
+                        .to_string_as_bytes()
+                        .map(|bytes| String::from_utf8_lossy(&bytes).to_string())
+                        .unwrap_or_default();
+                    parse_meta_text(&text, &url).await
+                }
+                Err(err) => Err(anyhow!("{err}")),
+            };
+            let _ = sender.send(result).await;
+        });
+    });
+
+    webview.load_uri(uri.as_str());
+
+    match futures::future::select(
+        Box::pin(receiver.recv()),
+        Box::pin(glib::timeout_future_seconds(WEBVIEW_META_TIMEOUT_SECS)),
+    )
+    .await
+    {
+        futures::future::Either::Left((result, _)) => result.map_err(|e| anyhow!("{e}"))?,
+        futures::future::Either::Right(_) => bail!("Timed out loading {uri}"),
+    }
+}
+
+/// Parses the tab-separated output of [`EXTRACT_SCRIPT`]:
+/// `T\t<title>` then `I\t<size>\t<href>` lines.
+async fn parse_meta_text(text: &str, url: &Url) -> Result<WebsiteMeta> {
+    let mut title = None;
+    let mut icons: Vec<(u32, Url)> = Vec::new();
+
+    for line in text.lines() {
+        match line.split_once('\t') {
+            Some(("T", value)) => {
+                if !value.is_empty() {
+                    title = Some(value.to_string());
+                }
+            }
+            Some(("I", rest)) => {
+                if let Some((size, href)) = rest.split_once('\t') {
+                    if let (Ok(size), Ok(href)) = (size.parse::<u32>(), url.join(href)) {
+                        icons.push((size, href));
+                    }
+                }
+            }
+            _ => (),
+        }
+    }
+
+    // Prefer the biggest declared icon; fall back to whatever exists
+    let best = icons.iter().max_by_key(|(size, _)| *size);
+    let icon = match best {
+        Some((_, href)) => Some(get_image_metadata(href.clone()).await?),
+        None => None,
+    };
+
+    Ok(WebsiteMeta { icon, title })
 }
 
 pub async fn icon_from_dialog(

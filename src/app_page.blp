@@ -102,6 +102,7 @@ template $AppPage: Adw.NavigationPage {
               show-enable-switch: true;
               expanded: bind user_agent_expander.enable-expansion;
               title: "Custom User Agent";
+              subtitle: "Set the app's user agent if a website isn't behaving";
               notify => $update_unsaved_details_notify_cb() swapped;
 
               Adw.EntryRow user_agent_entry {
@@ -110,12 +111,68 @@ template $AppPage: Adw.NavigationPage {
                 apply => $update_unsaved_details_cb() swapped;
               }
             }
+
+            Adw.ExpanderRow domain_restriction_expander {
+              show-enable-switch: true;
+              expanded: bind domain_restriction_expander.enable-expansion;
+              title: "Domain Restriction";
+              subtitle: "Only let the app browse its own domains";
+              notify => $update_unsaved_details_notify_cb() swapped;
+
+              Adw.EntryRow domains_entry {
+                title: "Allowed Domains";
+                show-apply-button: true;
+                apply => $update_unsaved_details_cb() swapped;
+              }
+            }
           }
-        }
+
+          Adw.PreferencesGroup {
+            title: "Network";
+            description: "Connection settings";
+
+            Adw.ExpanderRow proxy_expander {
+              show-enable-switch: true;
+              expanded: bind proxy_expander.enable-expansion;
+              title: "HTTP Proxy";
+              notify => $update_unsaved_details_notify_cb() swapped;
+
+              Adw.EntryRow proxy_entry {
+                title: "Proxy URL";
+                show-apply-button: true;
+                apply => $update_unsaved_details_cb() swapped;
+              }
+            }
+          }
+
+          Adw.PreferencesGroup {
+            title: "System Integration";
+            description: "How the app integrates with the system";
+
+            Adw.SwitchRow autostart_row {
+              title: "Start Automatically";
+              subtitle: "Launch this app when you log in";
+              activated => $update_unsaved_details_cb() swapped;
+            }
+
+            Adw.SwitchRow background_row {
+              title: "Run in Background";
+              subtitle: "Closing the window keeps the app running";
+              activated => $update_unsaved_details_cb() swapped;
+            }
+          }
+
+          Adw.PreferencesGroup {
+            title: "Website Permissions";
+            description: "Revoke access that was granted to websites";
+
+            Adw.ExpanderRow permissions_expander {}
+          }
+            }
+          }
       }
     }
   }
-}
 
 // This is a template child that gets populated when the page is built
 // Until there is a good way of accessing the menu's items (so that I can set the action target),

@@ -20,5 +20,54 @@ ShortcutsWindow help_overlay {
         action-name: 'app.quit';
       }
     }
+
+    ShortcutsGroup {
+      title: C_('shortcut window', 'Web App');
+
+      ShortcutsShortcut {
+        title: C_('shortcut window', 'Go Back');
+        action-name: 'win.back';
+      }
+
+      ShortcutsShortcut {
+        title: C_('shortcut window', 'Go Forward');
+        action-name: 'win.forward';
+      }
+
+      ShortcutsShortcut {
+        title: C_('shortcut window', 'Reload');
+        accelerator: '<primary>r';
+      }
+
+      ShortcutsShortcut {
+        title: C_('shortcut window', 'Reload Without Cache');
+        accelerator: '<primary><shift>r';
+      }
+
+      ShortcutsShortcut {
+        title: C_('shortcut window', 'Stop Loading');
+        accelerator: 'Escape';
+      }
+
+      ShortcutsShortcut {
+        title: C_('shortcut window', 'Zoom In');
+        accelerator: '<primary>plus';
+      }
+
+      ShortcutsShortcut {
+        title: C_('shortcut window', 'Zoom Out');
+        accelerator: '<primary>minus';
+      }
+
+      ShortcutsShortcut {
+        title: C_('shortcut window', 'Reset Zoom');
+        accelerator: '<primary>0';
+      }
+
+      ShortcutsShortcut {
+        title: C_('shortcut window', 'Go to Start Page');
+        accelerator: '<alt>Home';
+      }
+    }
   }
 }

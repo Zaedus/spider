@@ -52,9 +52,12 @@ fn main() -> glib::ExitCode {
     // Create a new GtkApplication. The application manages our main loop,
     // application windows, integration with the window manager/compositor, and
     // desktop features such as file opening and single-instance applications.
-    let app = SpiderApplication::new(
-        &(gio::ApplicationFlags::HANDLES_COMMAND_LINE | gio::ApplicationFlags::NON_UNIQUE),
-    );
+    //
+    // Every app id (io.github.zaedus.spider[.<app-id>]) is its own unique
+    // instance so launching an app that is already running in the
+    // background re-presents its existing window instead of spawning a
+    // duplicate process.
+    let app = SpiderApplication::new(&gio::ApplicationFlags::HANDLES_COMMAND_LINE);
 
     // Run the application. This function will block until the application
     // exits. Upon return, we have our exit code to return to the shell. (This
