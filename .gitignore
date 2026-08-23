@@ -3,3 +3,8 @@
 /src/config.rs
 /.flatpak-builder
 /build
+flatpak-repo/
+sdk-dest/
+sdk-target/
+_sdkbuild/
+target-flatpak*/

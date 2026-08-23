@@ -15,13 +15,6 @@
     "--socket=wayland",
     "--socket=pulseaudio"
   ],
-  "build-options": {
-    "append-path": "/usr/lib/sdk/rust-stable/bin",
-    "env": {
-      "RUST_BACKTRACE": "1",
-      "RUST_LOG": "spider=debug"
-    }
-  },
   "modules": [
     {
       "name": "unifdef",
@@ -53,7 +46,9 @@
         "-DENABLE_WEBDRIVER=OFF",
         "-DENABLE_INTROSPECTION=OFF",
         "-DUSE_LIBBACKTRACE=OFF",
-        "-DENABLE_SPEECH_SYNTHESIS=OFF"
+        "-DENABLE_SPEECH_SYNTHESIS=OFF",
+        "-DUSE_THIN_ARCHIVES=OFF",
+        "-DCMAKE_BUILD_TYPE=Release"
       ],
       "cleanup": [
         "/include",
@@ -68,7 +63,13 @@
           "url": "https://webkitgtk.org/releases/webkitgtk-2.52.6.tar.xz",
           "sha256": "179a2ea3f8f6edd4be7f31fdc55afc57bd0729f1fba648c61d4181539ac116fc"
         }
-      ]
+      ],
+      "build-options": {
+        "env": {
+          "CFLAGS": "-O2 -pipe -Wp,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -fno-omit-frame-pointer",
+          "CXXFLAGS": "-O2 -pipe -Wp,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -fno-omit-frame-pointer"
+        }
+      }
     },
     {
       "name": "spider",
@@ -76,8 +77,14 @@
       "buildsystem": "meson",
       "build-options": {
         "env": {
-          "CARGO_HOME": "/run/build/spider/cargo"
-        }
+          "CARGO_HOME": "/run/build/spider/cargo",
+          "RUST_BACKTRACE": "1",
+          "RUST_LOG": "spider=debug"
+        },
+        "append-path": "/usr/lib/sdk/rust-stable/bin",
+        "build-args": [
+          "--share=network"
+        ]
       },
       "config-opts": [
         "-Dflatpak=true"
@@ -86,7 +93,7 @@
         {
           "type": "git",
           "url": "https://github.com/MuazT/spider.git",
-          "commit": "5fdc3c3d1797d805301d48c801ce7e83e8b58a13"
+          "commit": "4a141fcd535648ca9c88c5f1058d436346510da1"
         },
         "generated-sources.json"
       ]
