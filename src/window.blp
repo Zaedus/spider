@@ -36,7 +36,7 @@ template $SpiderWindow: Adw.ApplicationWindow {
             MenuButton {
               primary: true;
               icon-name: 'open-menu-symbolic';
-              tooltip-text: _('Menu');
+              tooltip-text: 'Menu';
               menu-model: primary_menu;
             }
           }
@@ -63,6 +63,6 @@ template $SpiderWindow: Adw.ApplicationWindow {
 
 
 menu primary_menu {
-  item (_("_Keyboard Shortcuts"), "win.show-help-overlay")
-  item (_("_About Spider"), "app.about")
+  item ("_Keyboard Shortcuts", "win.show-help-overlay")
+  item ("_About Spider", "app.about")
 }
