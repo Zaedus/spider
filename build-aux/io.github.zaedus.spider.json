@@ -101,7 +101,18 @@
           "url": "https://github.com/MuazT/spider.git",
           "commit": "4a141fcd535648ca9c88c5f1058d436346510da1"
         },
-        "generated-sources.json"
+        "generated-sources.json",
+        {
+          "type": "dir",
+          "path": "../vendor",
+          "dest": "vendor"
+        },
+        {
+          "type": "file",
+          "path": "../.cargo/config.toml",
+          "dest": ".cargo",
+          "dest-filename": "config.toml"
+        }
       ]
     }
   ]
