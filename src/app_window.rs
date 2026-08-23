@@ -18,7 +18,7 @@ use crate::apps::{
 /// Stock Linux Chromium agent. WebKitGTK's own default claims to be
 /// Safari on macOS, which sites like WhatsApp Web reject ("browser not
 /// supported") and gate calling behind.
-const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36";
 
 fn format_css(id: &str, bg: &str, fg: &str) -> String {
     format!(
@@ -265,6 +265,10 @@ mod imp {
                 .enable_html5_database(true)
                 .enable_site_specific_quirks(true)
                 .enable_developer_extras(true);
+            let effective_user_agent = details
+                .user_agent
+                .clone()
+                .unwrap_or_else(|| DEFAULT_USER_AGENT.to_string());
             if let Some(user_agent) = &details.user_agent {
                 settings = settings.user_agent(user_agent);
             } else {
@@ -348,6 +352,59 @@ mod imp {
                 );
                 content_manager.add_script(&script);
             }
+
+            // Shim navigator.userAgentData (Client Hints). WebKitGTK does not
+            // implement it, but Chromium-only web apps (e.g. WhatsApp Web
+            // calling) refuse to work when it is missing.
+            let chrome_major = effective_user_agent
+                .split("Chrome/")
+                .nth(1)
+                .and_then(|rest| rest.split('.').next())
+                .unwrap_or("151")
+                .to_string();
+            let ua_ch_shim = format!(
+                r#"(function() {{
+    if (navigator.userAgentData) return;
+    var v = '{v}';
+    var brands = [
+        {{ brand: 'Not_A Brand', version: '8' }},
+        {{ brand: 'Chromium', version: v }},
+        {{ brand: 'Google Chrome', version: v }}
+    ];
+    var data = {{
+        brands: brands,
+        mobile: false,
+        platform: 'Linux',
+        toJSON: function() {{
+            return {{ brands: brands, mobile: false, platform: 'Linux' }};
+        }},
+        getHighEntropyValues: function(hints) {{
+            return Promise.resolve({{
+                architecture: 'x86',
+                bitness: '64',
+                model: '',
+                platformVersion: '13.0.0',
+                uaFullVersion: v + '.0.0.0',
+                fullVersionList: brands,
+                wow64: false
+            }});
+        }}
+    }};
+    Object.defineProperty(Navigator.prototype, 'userAgentData', {{
+        get: function() {{ return data; }},
+        configurable: true
+    }});
+}})();"#,
+                v = chrome_major
+            );
+            let shim_script = webkit::UserScript::new(
+                &ua_ch_shim,
+                webkit::UserContentInjectedFrames::AllFrames,
+                webkit::UserScriptInjectionTime::Start,
+                &[],
+                &[],
+            );
+            content_manager.add_script(&shim_script);
 
             // Build WebContext
             let web_context = WebContext::new();
