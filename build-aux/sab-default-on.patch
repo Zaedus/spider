@@ -1,0 +1,7 @@
+--- a/Source/JavaScriptCore/runtime/OptionsList.h
++++ b/Source/JavaScriptCore/runtime/OptionsList.h
+@@ -660,3 +660,3 @@
+     v(Bool, useMoreCurrencyDisplayChoices, false, Normal, "Enable more currencyDisplay choices for Intl.NumberFormat"_s) \
+-    v(Bool, useSharedArrayBuffer, false, Normal, nullptr) \
++    v(Bool, useSharedArrayBuffer, true, Normal, nullptr) \
+     v(Bool, useShadowRealm, false, Normal, "Expose the ShadowRealm object."_s) \
