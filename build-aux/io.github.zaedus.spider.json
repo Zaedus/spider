@@ -63,6 +63,10 @@
           "type": "archive",
           "url": "https://webkitgtk.org/releases/webkitgtk-2.52.6.tar.xz",
           "sha256": "179a2ea3f8f6edd4be7f31fdc55afc57bd0729f1fba648c61d4181539ac116fc"
+        },
+        {
+          "type": "patch",
+          "path": "sab-default-on.patch"
         }
       ],
       "build-options": {
@@ -71,9 +75,7 @@
           "CXXFLAGS": "-O2 -pipe -Wp,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -fno-omit-frame-pointer"
         }
       },
-      "build-commands": [
-        "sed -i \"s/v(Bool, useSharedArrayBuffer, false,/v(Bool, useSharedArrayBuffer, true,/\" Source/JavaScriptCore/runtime/OptionsList.h"
-      ]
+      "build-commands": []
     },
     {
       "name": "spider",

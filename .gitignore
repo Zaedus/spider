@@ -8,3 +8,4 @@ sdk-dest/
 sdk-target/
 _sdkbuild/
 target-flatpak*/
+vendor/
