@@ -166,6 +166,24 @@ lazy_static! {
         .redirect_policy(config::RedirectPolicy::Limit(10))
         .build()
         .unwrap();
+    // Same client, but it accepts self-signed and otherwise invalid certificates
+    static ref http_insecure: isahc::HttpClient = isahc::HttpClient::builder()
+        .redirect_policy(config::RedirectPolicy::Limit(10))
+        .ssl_options(
+            config::SslOption::DANGER_ACCEPT_INVALID_CERTS
+                | config::SslOption::DANGER_ACCEPT_INVALID_HOSTS,
+        )
+        .build()
+        .unwrap();
+}
+
+/// Chooses the HTTP client to use for scraping website metadata
+fn http_client(accept_invalid_certs: bool) -> &'static isahc::HttpClient {
+    if accept_invalid_certs {
+        &*http_insecure
+    } else {
+        &*http
+    }
 }
 
 // Sane size to render SVGs to that's better than the default
@@ -187,8 +205,10 @@ pub async fn load_texture(buffer: Vec<u8>) -> Result<gdk::Texture> {
     Ok(frame.texture())
 }
 
-async fn get_image_metadata(url: Url) -> Result<Image> {
-    let mut response = http.get_async(url.to_string()).await?;
+async fn get_image_metadata(url: Url, accept_invalid_certs: bool) -> Result<Image> {
+    let mut response = http_client(accept_invalid_certs)
+        .get_async(url.to_string())
+        .await?;
     if !response.status().is_success() {
         bail!("{url}: HTTP {}", response.status());
     }
@@ -220,8 +240,10 @@ async fn get_image_metadata(url: Url) -> Result<Image> {
         .map_err(|e| anyhow!("{url}: {e}"))
 }
 
-pub async fn get_website_meta(url: Url) -> Result<WebsiteMeta> {
-    let mut req = http.get_async(url.to_string()).await?;
+pub async fn get_website_meta(url: Url, accept_invalid_certs: bool) -> Result<WebsiteMeta> {
+    let mut req = http_client(accept_invalid_certs)
+        .get_async(url.to_string())
+        .await?;
     let html = req.text().await?;
     let url: Url = Url::parse(req.effective_uri().unwrap().to_string().as_str()).unwrap();
     let doc = Html::parse_document(html.as_str());
@@ -237,7 +259,12 @@ pub async fn get_website_meta(url: Url) -> Result<WebsiteMeta> {
         .into_iter()
         .filter_map(|path| url.join(path).ok())
         .collect::<HashSet<Url>>();
-    let metadata = join_all(paths.into_iter().map(get_image_metadata)).await;
+    let metadata = join_all(
+        paths
+            .into_iter()
+            .map(|path| get_image_metadata(path, accept_invalid_certs)),
+    )
+    .await;
     let best_image = metadata
         .iter()
         .filter_map(|x| x.as_ref().ok())

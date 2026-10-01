@@ -22,6 +22,7 @@
 - [x] **Adaptive window styling**: Each app's titlebar adapts to it's [theme color](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta/name/theme-color)
 - [x] **High quality favicons**: Scrapes websites for a high quality favicon to use
 - [x] **Custom user agents**: Lets you set the app's [user agent](https://en.wikipedia.org/wiki/User_agent) if a website isn't behaving
+- [x] **Self-signed certificates**: Lets an app ignore TLS certificate errors so sites with self-signed or otherwise invalid certificates still work
 
 ## Planned ✔️
 

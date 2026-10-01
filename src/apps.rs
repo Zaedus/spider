@@ -36,6 +36,8 @@ pub struct AppDetails {
     pub window_height: i32,
     pub window_maximize: bool,
     pub user_agent: Option<String>,
+    /// Ignore TLS certificate errors (self-signed, expired, etc.) for this app
+    pub accept_invalid_certs: bool,
 }
 
 impl PartialEq for AppDetails {
@@ -46,6 +48,7 @@ impl PartialEq for AppDetails {
             && self.icon == other.icon
             && self.has_titlebar_color == other.has_titlebar_color
             && self.user_agent == other.user_agent
+            && self.accept_invalid_certs == other.accept_invalid_certs
     }
 }
 
@@ -61,6 +64,7 @@ impl Default for AppDetails {
             window_height: 400,
             window_maximize: false,
             user_agent: None,
+            accept_invalid_certs: false,
         }
     }
 }
@@ -87,6 +91,10 @@ impl AppDetails {
             (
                 "windowmaximize".to_string(),
                 self.window_maximize.to_string(),
+            ),
+            (
+                "acceptinvalidcerts".to_string(),
+                self.accept_invalid_certs.to_string(),
             ),
         ];
         if let Some(user_agent) = &self.user_agent {
@@ -177,6 +185,10 @@ pub fn get_app_details(id: &str) -> Option<AppDetails> {
             .and_then(|x| x.parse::<bool>().ok())
             .unwrap_or(false),
         user_agent: settings.get("useragent").map(|x| x.to_string()),
+        accept_invalid_certs: settings
+            .get("acceptinvalidcerts")
+            .and_then(|x| x.parse::<bool>().ok())
+            .unwrap_or(false),
     })
 }
 

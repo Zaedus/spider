@@ -63,6 +63,8 @@ mod imp {
         pub user_agent_expander: TemplateChild<adw::ExpanderRow>,
         #[template_child]
         pub user_agent_entry: TemplateChild<adw::EntryRow>,
+        #[template_child]
+        pub accept_invalid_certs: TemplateChild<adw::SwitchRow>,
     }
 
     #[glib::object_subclass]
@@ -173,6 +175,7 @@ mod imp {
                     .user_agent_expander
                     .enables_expansion()
                     .then(|| self.user_agent_entry.text().to_string()),
+                accept_invalid_certs: self.accept_invalid_certs.is_active(),
                 icon,
                 ..details
             };
@@ -235,6 +238,8 @@ mod imp {
             self.title_entry.set_text(details.title.as_str());
             self.url_entry.set_text(details.url.as_str());
             self.titlebar_color.set_active(details.has_titlebar_color);
+            self.accept_invalid_certs
+                .set_active(details.accept_invalid_certs);
             self.user_agent_expander
                 .set_enable_expansion(details.user_agent.is_some());
             if let Some(user_agent) = &details.user_agent {
@@ -261,6 +266,13 @@ mod imp {
         }
         fn setup_signals(&self) {
             self.titlebar_color.connect_active_notify(clone!(
+                #[weak(rename_to=_self)]
+                self,
+                move |_| {
+                    _self.update_unsaved_details();
+                }
+            ));
+            self.accept_invalid_certs.connect_active_notify(clone!(
                 #[weak(rename_to=_self)]
                 self,
                 move |_| {

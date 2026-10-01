@@ -63,6 +63,8 @@ mod imp {
         pub icon_image: TemplateChild<gtk::Image>,
         #[template_child]
         pub title_entry: TemplateChild<adw::EntryRow>,
+        #[template_child]
+        pub accept_invalid_certs: TemplateChild<adw::SwitchRow>,
 
         #[property(get, set)]
         pub loading: Cell<bool>,
@@ -91,35 +93,26 @@ mod imp {
     #[gtk::template_callbacks]
     impl CreateAppDialog {
         #[template_callback]
-        async fn on_url_apply(&self, entry: adw::EntryRow) {
-            self.obj().set_loading(true);
-            if let Ok(url) = self.parse_url(entry.text().as_str()) {
-                // Disable apply button when setting text
-                // so it won't keep coming back on every apply
-                self.url_entry.set_show_apply_button(false);
-                self.url_entry.set_text(url.as_str());
-                self.url_entry.set_show_apply_button(true);
-
-                match util::get_website_meta(url).await {
-                    Ok(meta) => {
-                        self.title_entry
-                            .set_text(meta.title.unwrap_or_default().as_str());
-                        self.unsaved_icon
-                            .replace(meta.icon.as_ref().map(|x| x.buffer.clone()));
-                        let texture = match meta.icon.as_ref() {
-                            Some(icon) => icon.load_texture().await.ok(),
-                            None => None,
-                        };
-                        self.icon_image.set_paintable(texture.as_ref());
-                    }
-                    Err(err) => self.toast(err.to_string()),
-                }
-                self.validate_input();
-            } else {
-                self.validate_input();
-                self.url_entry.set_css_classes(&["error"]);
+        async fn on_url_apply(&self, _: adw::EntryRow) {
+            self.load_metadata().await;
+        }
+        #[template_callback]
+        fn on_accept_invalid_certs_notify(&self, param: glib::ParamSpec) {
+            // The user might have tried to add a site whose certificate was
+            // rejected, so fetch the metadata again now that we can accept it
+            if param.name() != "active"
+                || !self.accept_invalid_certs.is_active()
+                || self.url_entry.text().is_empty()
+            {
+                return;
             }
-            self.obj().set_loading(false);
+            glib::spawn_future_local(glib::clone!(
+                #[weak(rename_to=_self)]
+                self,
+                async move {
+                    _self.load_metadata().await;
+                }
+            ));
         }
         #[template_callback]
         fn validate_input_cb(&self, _: gtk::Widget) {
@@ -148,17 +141,16 @@ mod imp {
                     .await
                     .ok_or(anyhow!("failed to get window"))
                     .unwrap();
-                if let Err(err) = install_app(
-                    &AppDetails::new(
+                let details = AppDetails {
+                    accept_invalid_certs: self.accept_invalid_certs.is_active(),
+                    ..AppDetails::new(
                         gen_unique_id(),
                         self.title_entry.text().to_string(),
                         self.url_entry.text().to_string(),
-                    ),
-                    self.unsaved_icon.take().unwrap(),
-                    &wid,
-                )
-                .await
-                {
+                    )
+                };
+                let icon = self.unsaved_icon.take().unwrap();
+                if let Err(err) = install_app(&details, icon, &wid).await {
                     self.toast(err.to_string());
                 } else {
                     self.obj().activate_action("win.refresh", None).unwrap();
@@ -172,6 +164,36 @@ mod imp {
     }
 
     impl CreateAppDialog {
+        async fn load_metadata(&self) {
+            self.obj().set_loading(true);
+            if let Ok(url) = self.parse_url(self.url_entry.text().as_str()) {
+                // Disable apply button when setting text
+                // so it won't keep coming back on every apply
+                self.url_entry.set_show_apply_button(false);
+                self.url_entry.set_text(url.as_str());
+                self.url_entry.set_show_apply_button(true);
+
+                match util::get_website_meta(url, self.accept_invalid_certs.is_active()).await {
+                    Ok(meta) => {
+                        self.title_entry
+                            .set_text(meta.title.unwrap_or_default().as_str());
+                        self.unsaved_icon
+                            .replace(meta.icon.as_ref().map(|x| x.buffer.clone()));
+                        let texture = match meta.icon.as_ref() {
+                            Some(icon) => icon.load_texture().await.ok(),
+                            None => None,
+                        };
+                        self.icon_image.set_paintable(texture.as_ref());
+                    }
+                    Err(err) => self.toast(err.to_string()),
+                }
+                self.validate_input();
+            } else {
+                self.validate_input();
+                self.url_entry.set_css_classes(&["error"]);
+            }
+            self.obj().set_loading(false);
+        }
         fn parse_url(&self, url: &str) -> anyhow::Result<Url> {
             if let Ok(url) = Url::parse(url) {
                 Ok(url)

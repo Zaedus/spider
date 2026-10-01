@@ -4,7 +4,7 @@ use glib::clone;
 use gtk::{gdk, gio, glib};
 use std::cell::RefCell;
 use webkit::prelude::*;
-use webkit::{HardwareAccelerationPolicy, PolicyDecisionType, WebContext, WebView};
+use webkit::{HardwareAccelerationPolicy, PolicyDecisionType, TLSErrorsPolicy, WebContext, WebView};
 
 use crate::apps::{get_app_details, AppDetails};
 
@@ -176,6 +176,11 @@ mod imp {
                 .cache_directory(app_cache_dir.to_str().unwrap())
                 .data_directory(app_data_dir.join("data").to_str().unwrap())
                 .build();
+
+            // Let the page load even when its certificate is self-signed or otherwise invalid
+            if details.accept_invalid_certs {
+                network_session.set_tls_errors_policy(TLSErrorsPolicy::Ignore);
+            }
 
             network_session.connect_download_started(|_, dl| {
                 dl.connect_decide_destination(move |dl, dest| {

@@ -63,6 +63,13 @@ template $CreateAppDialog: Adw.Dialog {
               Image icon_image {}
             }
           }
+
+          Adw.SwitchRow accept_invalid_certs {
+            title: "Ignore TLS Certificate Errors";
+            subtitle: "Loads sites with self-signed or otherwise invalid certificates. This is insecure!";
+            sensitive: bind template.loading inverted;
+            notify => $on_accept_invalid_certs_notify() swapped;
+          }
         }
 
         Button button {

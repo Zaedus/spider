@@ -110,6 +110,11 @@ template $AppPage: Adw.NavigationPage {
                 apply => $update_unsaved_details_cb() swapped;
               }
             }
+
+            Adw.SwitchRow accept_invalid_certs {
+              title: "Ignore TLS Certificate Errors";
+              subtitle: "Loads sites with self-signed or otherwise invalid certificates. This is insecure!";
+            }
           }
         }
       }
