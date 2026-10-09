@@ -100,10 +100,10 @@ mod imp {
                 self.url_entry.set_text(url.as_str());
                 self.url_entry.set_show_apply_button(true);
 
-                match util::get_website_meta(url).await {
+                match util::get_website_meta(&url).await {
                     Ok(meta) => {
                         self.title_entry
-                            .set_text(meta.title.unwrap_or_default().as_str());
+                            .set_text(meta.title.unwrap_or_else(|| url.domain().unwrap_or_default().to_string() ).as_str());
                         self.unsaved_icon
                             .replace(meta.icon.as_ref().map(|x| x.buffer.clone()));
                         let texture = match meta.icon.as_ref() {

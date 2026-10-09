@@ -220,7 +220,7 @@ async fn get_image_metadata(url: Url) -> Result<Image> {
         .map_err(|e| anyhow!("{url}: {e}"))
 }
 
-pub async fn get_website_meta(url: Url) -> Result<WebsiteMeta> {
+pub async fn get_website_meta(url: &Url) -> Result<WebsiteMeta> {
     let mut req = http.get_async(url.to_string()).await?;
     let html = req.text().await?;
     let url: Url = Url::parse(req.effective_uri().unwrap().to_string().as_str()).unwrap();
